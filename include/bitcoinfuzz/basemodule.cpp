@@ -82,4 +82,9 @@ namespace bitcoinfuzz
     {
         return std::nullopt;
     }
+
+    std::optional<std::string> BaseModule::bip32_derive_xpub(std::span<const uint8_t> buffer) const
+    {
+        return std::nullopt;
+    }
 }

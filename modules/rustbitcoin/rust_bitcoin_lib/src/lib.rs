@@ -5,6 +5,13 @@ use bitcoin::block::BlockUncheckedExt;
 use bitcoin::consensus::{deserialize_partial, encode, serialize};
 use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
+
+use bitcoin::key::Secp256k1;
+use bitcoin::bip32::Xpub;
+use bitcoin::bip32::Xpriv;
+use bitcoin::NetworkKind;
+use bitcoin::bip32::ChildNumber;
+
 use p2p::address::AddrV2;
 use p2p::message::{AddrV2Payload, RawNetworkMessage};
 use p2p::Magic;
@@ -247,6 +254,29 @@ pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: us
                 return -2;
             }
             return -1;
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: usize) -> *mut c_char {
+
+    let secp = Secp256k1::new();
+    let seed: [u8; 16] = [
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    ];
+
+    let sk = Xpriv::new_master(NetworkKind::Main, &seed);
+    let mut res =  Xpub::from_xpriv(&secp, &sk);
+
+    for _ in 0..256 {
+        res = res.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL).expect("REASON");
+        match res {
+            Ok(xpub) => str_to_c_string(&xpub),
+            Err(_) => std::ptr::null_mut(),
         }
     }
 }
