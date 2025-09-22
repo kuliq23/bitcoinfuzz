@@ -270,15 +270,19 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: us
     ];
 
     let sk = Xpriv::new_master(NetworkKind::Main, &seed);
-    let mut res =  Xpub::from_xpriv(&secp, &sk);
+    let mut pk =  Xpub::from_xpriv(&secp, &sk);
 
-    for _ in 0..256 {
-        res = res.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL).expect("REASON");
-        match res {
-            Ok(xpub) => str_to_c_string(&xpub),
-            Err(_) => std::ptr::null_mut(),
+    for i in 0..256 {
+        match pk.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL){
+            Ok(next) => pk = next,
+            Err(e) => {
+                eprintln!("derivation failed at step {}: {}", i, e);
+                return std::ptr::null_mut();
+            }
         }
     }
+    str_to_c_string(&pk.to_string())
+    
 }
 
 unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {

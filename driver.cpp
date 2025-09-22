@@ -413,6 +413,31 @@ namespace bitcoinfuzz
         }
     }
 
+    void Driver::Bip32DeriveXpubTarget(std::span<const uint8_t> buffer) const
+    {
+        std::optional<std::string> last_response{std::nullopt};
+        std::string last_module_name;
+
+        for (auto &module : modules)
+        {
+            std::optional<std::string> res{module.second->bip32_derive_xpub(buffer)};
+            if (!res.has_value()) continue;
+            if (last_response.has_value()) {
+                if (*res != *last_response) {
+                    std::cout << "BIP32 xpub derivation failed" << std::endl;
+                    std::cout << "Module: " << module.first << std::endl;
+                    std::cout << "Result: " << *res << std::endl;
+                    std::cout << "Module: " << last_module_name << std::endl;
+                    std::cout << "Result: " << *last_response << std::endl;
+                }
+                assert(*res == *last_response);
+            }
+
+            last_response = res.value();
+            last_module_name = module.first;
+        }
+    }
+
     void Driver::Run(const uint8_t *data, const size_t size, const std::string &target) const
     {
         std::span<const uint8_t> buffer{data, size};
@@ -446,6 +471,8 @@ namespace bitcoinfuzz
             this->ParseLightningP2pMessageTarget(buffer);
         } else if (target == "transaction_eval") {
             this->TransactionEvalTarget(buffer);
+        } else if (target == "bip32_derive_xpub") {
+            this->Bip32DeriveXpubTarget(buffer);
         } else {
             std::cout << "Target not defined!" << std::endl;
             assert(false);
