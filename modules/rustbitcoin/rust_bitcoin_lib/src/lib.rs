@@ -5,16 +5,16 @@ use bitcoin::block::BlockUncheckedExt;
 use bitcoin::consensus::{deserialize_partial, encode, serialize};
 use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
-
+use std::ptr;
 use bitcoin::key::Secp256k1;
 use bitcoin::bip32::Xpub;
 use bitcoin::bip32::Xpriv;
 use bitcoin::NetworkKind;
 use bitcoin::bip32::ChildNumber;
 
-use p2p::address::AddrV2;
-use p2p::message::{AddrV2Payload, RawNetworkMessage};
-use p2p::Magic;
+//use p2p::address::AddrV2;
+//use p2p::message::{AddrV2Payload, RawNetworkMessage};
+//use p2p::Magic;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -93,170 +93,170 @@ pub unsafe extern "C" fn rust_bitcoin_script(data: *const u8, len: usize) -> *mu
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_parse_p2p_message(
-    data: *const u8,
-    len: usize,
-) -> *mut c_char {
-    let mut data_slice = slice::from_raw_parts(data, len);
+//#[no_mangle]
+//pub unsafe extern "C" fn rust_bitcoin_parse_p2p_message(
+//    data: *const u8,
+//    len: usize,
+//) -> *mut c_char {
+//    let mut data_slice = slice::from_raw_parts(data, len);
+//
+//    let message = match RawNetworkMessage::consensus_decode(&mut data_slice) {
+//        Ok(m) => m,
+//        Err(encode::Error::Parse(encode::ParseError::UnsupportedSegwitFlag(_))) => {
+//            return std::ptr::null_mut()
+//        }
+//        Err(_) => return str_to_c_string("0"),
+//    };
+//    if message.magic() != &Magic::BITCOIN {
+//        return str_to_c_string("0");
+//    }
+//    let cmd = message.cmd();
+//    match cmd {
+//        "unknown" => str_to_c_string("0"),
+//        _ => str_to_c_string(cmd),
+//    }
+//}
 
-    let message = match RawNetworkMessage::consensus_decode(&mut data_slice) {
-        Ok(m) => m,
-        Err(encode::Error::Parse(encode::ParseError::UnsupportedSegwitFlag(_))) => {
-            return std::ptr::null_mut()
-        }
-        Err(_) => return str_to_c_string("0"),
-    };
-    if message.magic() != &Magic::BITCOIN {
-        return str_to_c_string("0");
-    }
-    let cmd = message.cmd();
-    match cmd {
-        "unknown" => str_to_c_string("0"),
-        _ => str_to_c_string(cmd),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_address_parse(address: *const c_char) -> *mut c_char {
-    if address.is_null() {
-        return std::ptr::null_mut();
-    }
-
-    let address_str = match c_str_to_str(address) {
-        Ok(s) => s,
-        Err(_) => return str_to_c_string("INVALID"),
-    };
-
-    match Address::from_str(address_str) {
-        Ok(addr_unchecked) => match addr_unchecked.require_network(bitcoin::Network::Bitcoin) {
-            Ok(addr) => {
-                let prefix = match addr.address_type() {
-                    Some(bitcoin::address::AddressType::P2pkh) => "PKH:",
-                    Some(bitcoin::address::AddressType::P2sh) => "SH:",
-                    Some(bitcoin::address::AddressType::P2wpkh) => "WPKH:",
-                    Some(bitcoin::address::AddressType::P2wsh) => "WSH:",
-                    Some(bitcoin::address::AddressType::P2tr) => "TR:",
-                    Some(_) => "UNK:",
-                    None => "UNK:",
-                };
-
-                let result = format!("{}{:}", prefix, addr);
-                str_to_c_string(&result)
-            }
-            Err(_) => str_to_c_string("INVALID"),
-        },
-        Err(_) => str_to_c_string("INVALID"),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_psbt_parse(data: *const u8, len: usize) -> *mut c_char {
-    let data_slice = slice::from_raw_parts(data, len);
-
-    match bitcoin::psbt::Psbt::deserialize(data_slice) {
-        Ok(psbt) => {
-            let mut result = String::new();
-
-            //result.push_str(&format!("v={};", psbt.unsigned_tx.version));
-            result.push_str(&format!("lt={};", psbt.unsigned_tx.lock_time));
-            result.push_str(&format!("in={};", psbt.inputs.len()));
-            result.push_str(&format!("out={};", psbt.outputs.len()));
-            for (i, input) in psbt.unsigned_tx.inputs.iter().enumerate() {
-                if i < psbt.inputs.len() {
-                    result.push_str(&format!(
-                        "in{}prev={}:{};",
-                        i, input.previous_output.txid, input.previous_output.vout
-                    ));
-                    result.push_str(&format!("in{}seq={};", i, input.sequence));
-
-                    let psbt_input = &psbt.inputs[i];
-
-                    if psbt_input.witness_utxo.is_some() || psbt_input.non_witness_utxo.is_some() {
-                        result.push_str(&format!("in{}utxo=1;", i));
-                    }
-
-                    result.push_str(&format!("in{}sigs={};", i, psbt_input.partial_sigs.len()));
-                }
-            }
-
-            for (i, output) in psbt.unsigned_tx.outputs.iter().enumerate() {
-                if i < psbt.outputs.len() {
-                    // refer: https://github.com/bitcoinfuzz/bitcoinfuzz/issues/134#issuecomment-2884936854 for typecasting
-                    result.push_str(&format!("out{}val={};", i, output.value.to_sat() as i64));
-                    result.push_str(&format!(
-                        "out{}script={};",
-                        i,
-                        output.script_pubkey.to_hex_string()
-                    ));
-                }
-            }
-
-            str_to_c_string(&result)
-        }
-        Err(_) => std::ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_addrv2(data: *const u8, len: usize) -> *mut c_char {
-    // Safety: Ensure that the data pointer is valid for the given length
-    let data_slice = slice::from_raw_parts(data, len);
-
-    let addr: Result<(AddrV2Payload, usize), _> = encode::deserialize_partial(data_slice);
-    let mut clearnet: u64 = 0;
-    let mut tor: u64 = 0;
-    let mut i2p: u64 = 0;
-    let mut cjdns: u64 = 0;
-    match addr {
-        Err(_) => str_to_c_string("clearnet=0tor=0cjdns=0i2p=0"),
-        Ok(vec_addr) => {
-            for a in vec_addr.0 .0 {
-                if matches!(a.addr, AddrV2::Ipv4(_)) {
-                    clearnet += 1;
-                } else if matches!(a.addr, AddrV2::Ipv6(_)) {
-                    clearnet += 1;
-                } else if matches!(a.addr, AddrV2::TorV3(_)) {
-                    tor += 1;
-                } else if matches!(a.addr, AddrV2::Cjdns(_)) {
-                    cjdns += 1;
-                } else if matches!(a.addr, AddrV2::I2p(_)) {
-                    i2p += 1;
-                }
-            }
-            let res = "clearnet=".to_string()
-                + &clearnet.to_string()
-                + "tor="
-                + &tor.to_string()
-                + "cjdns="
-                + &cjdns.to_string()
-                + "i2p="
-                + &i2p.to_string();
-            return str_to_c_string(&res);
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: usize) -> i32 {
-    // Safety: Ensure that the data pointer is valid for the given length
-    let data_slice = slice::from_raw_parts(data, len);
-
-    let res = deserialize_partial::<HeaderAndShortIds>(data_slice);
-
-    match res {
-        Ok((header_and_short_ids, _)) => {
-            let serialized_data = serialize(&header_and_short_ids);
-            serialized_data.len() as i32
-        }
-        Err(err) => {
-            if err.to_string().starts_with("unsupported segwit version") {
-                return -2;
-            }
-            return -1;
-        }
-    }
-}
+//#[no_mangle]
+//pub unsafe extern "C" fn rust_bitcoin_address_parse(address: *const c_char) -> *mut c_char {
+//    if address.is_null() {
+//        return std::ptr::null_mut();
+//    }
+//
+//    let address_str = match c_str_to_str(address) {
+//        Ok(s) => s,
+//        Err(_) => return str_to_c_string("INVALID"),
+//    };
+//
+//    match Address::from_str(address_str) {
+//        Ok(addr_unchecked) => match addr_unchecked.require_network(bitcoin::Network::Bitcoin) {
+//            Ok(addr) => {
+//                let prefix = match addr.address_type() {
+//                    Some(bitcoin::address::AddressType::P2pkh) => "PKH:",
+//                    Some(bitcoin::address::AddressType::P2sh) => "SH:",
+//                    Some(bitcoin::address::AddressType::P2wpkh) => "WPKH:",
+//                    Some(bitcoin::address::AddressType::P2wsh) => "WSH:",
+//                    Some(bitcoin::address::AddressType::P2tr) => "TR:",
+//                    Some(_) => "UNK:",
+//                    None => "UNK:",
+//                };
+//
+//                let result = format!("{}{:}", prefix, addr);
+//                str_to_c_string(&result)
+//            }
+//            Err(_) => str_to_c_string("INVALID"),
+//        },
+//        Err(_) => str_to_c_string("INVALID"),
+//    }
+//}
+//
+//#[no_mangle]
+//pub unsafe extern "C" fn rust_bitcoin_psbt_parse(data: *const u8, len: usize) -> *mut c_char {
+//    let data_slice = slice::from_raw_parts(data, len);
+//
+//    match bitcoin::psbt::Psbt::deserialize(data_slice) {
+//        Ok(psbt) => {
+//            let mut result = String::new();
+//
+//            //result.push_str(&format!("v={};", psbt.unsigned_tx.version));
+//            result.push_str(&format!("lt={};", psbt.unsigned_tx.lock_time));
+//            result.push_str(&format!("in={};", psbt.inputs.len()));
+//            result.push_str(&format!("out={};", psbt.outputs.len()));
+//            for (i, input) in psbt.unsigned_tx.inputs.iter().enumerate() {
+//                if i < psbt.inputs.len() {
+//                    result.push_str(&format!(
+//                        "in{}prev={}:{};",
+//                        i, input.previous_output.txid, input.previous_output.vout
+//                    ));
+//                    result.push_str(&format!("in{}seq={};", i, input.sequence));
+//
+//                    let psbt_input = &psbt.inputs[i];
+//
+//                    if psbt_input.witness_utxo.is_some() || psbt_input.non_witness_utxo.is_some() {
+//                        result.push_str(&format!("in{}utxo=1;", i));
+//                    }
+//
+//                    result.push_str(&format!("in{}sigs={};", i, psbt_input.partial_sigs.len()));
+//                }
+//            }
+//
+//            for (i, output) in psbt.unsigned_tx.outputs.iter().enumerate() {
+//                if i < psbt.outputs.len() {
+//                    // refer: https://github.com/bitcoinfuzz/bitcoinfuzz/issues/134#issuecomment-2884936854 for typecasting
+//                    result.push_str(&format!("out{}val={};", i, output.value.to_sat() as i64));
+//                    result.push_str(&format!(
+//                        "out{}script={};",
+//                        i,
+//                        output.script_pubkey.to_hex_string()
+//                    ));
+//                }
+//            }
+//
+//            str_to_c_string(&result)
+//        }
+//        Err(_) => std::ptr::null_mut(),
+//    }
+//}
+//
+//#[no_mangle]
+//pub unsafe extern "C" fn rust_bitcoin_addrv2(data: *const u8, len: usize) -> *mut c_char {
+//    // Safety: Ensure that the data pointer is valid for the given length
+//    let data_slice = slice::from_raw_parts(data, len);
+//
+//    let addr: Result<(AddrV2Payload, usize), _> = encode::deserialize_partial(data_slice);
+//    let mut clearnet: u64 = 0;
+//    let mut tor: u64 = 0;
+//    let mut i2p: u64 = 0;
+//    let mut cjdns: u64 = 0;
+//    match addr {
+//        Err(_) => str_to_c_string("clearnet=0tor=0cjdns=0i2p=0"),
+//        Ok(vec_addr) => {
+//            for a in vec_addr.0 .0 {
+//                if matches!(a.addr, AddrV2::Ipv4(_)) {
+//                    clearnet += 1;
+//                } else if matches!(a.addr, AddrV2::Ipv6(_)) {
+//                    clearnet += 1;
+//                } else if matches!(a.addr, AddrV2::TorV3(_)) {
+//                    tor += 1;
+//                } else if matches!(a.addr, AddrV2::Cjdns(_)) {
+//                    cjdns += 1;
+//                } else if matches!(a.addr, AddrV2::I2p(_)) {
+//                    i2p += 1;
+//                }
+//            }
+//            let res = "clearnet=".to_string()
+//                + &clearnet.to_string()
+//                + "tor="
+//                + &tor.to_string()
+//                + "cjdns="
+//                + &cjdns.to_string()
+//                + "i2p="
+//                + &i2p.to_string();
+//            return str_to_c_string(&res);
+//        }
+//    }
+//}
+//
+//#[no_mangle]
+//pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: usize) -> i32 {
+//    // Safety: Ensure that the data pointer is valid for the given length
+//    let data_slice = slice::from_raw_parts(data, len);
+//
+//    let res = deserialize_partial::<HeaderAndShortIds>(data_slice);
+//
+//    match res {
+//        Ok((header_and_short_ids, _)) => {
+//            let serialized_data = serialize(&header_and_short_ids);
+//            serialized_data.len() as i32
+//        }
+//        Err(err) => {
+//            if err.to_string().starts_with("unsupported segwit version") {
+//                return -2;
+//            }
+//            return -1;
+//        }
+//    }
+//}
 
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: usize) -> *mut c_char {
@@ -269,12 +269,22 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: us
     0x0c, 0x0d, 0x0e, 0x0f,
     ];
 
-    let sk = Xpriv::new_master(NetworkKind::Main, &seed);
+    // správně:
+    let sk = match Xpriv::new_master(NetworkKind::Main, &seed) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("failed to create master xpriv: {e}");
+            return ptr::null_mut();
+        }
+    };
     let mut pk =  Xpub::from_xpriv(&secp, &sk);
-
+    eprintln!("starting derivation from xpub: {}", pk);
     for i in 0..256 {
         match pk.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL){
-            Ok(next) => pk = next,
+            Ok(next) =>{
+                eprintln!("derivation step {} successful", i);
+                pk = next;
+            } 
             Err(e) => {
                 eprintln!("derivation failed at step {}: {}", i, e);
                 return std::ptr::null_mut();

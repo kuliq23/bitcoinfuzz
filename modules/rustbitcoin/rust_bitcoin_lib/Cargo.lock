@@ -11,17 +11,11 @@ checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 [[package]]
 name = "base58ck"
 version = "0.2.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "bitcoin-internals",
  "bitcoin_hashes 0.16.0",
 ]
-
-[[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bech32"
@@ -32,10 +26,9 @@ checksum = "d965446196e3b7decd44aa7ee49e31d630118f90ef12f97900f262eb915c951d"
 [[package]]
 name = "bitcoin"
 version = "0.33.0-alpha.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "base58ck",
- "base64",
  "bech32",
  "bitcoin-internals",
  "bitcoin-io 0.2.0",
@@ -50,7 +43,7 @@ dependencies = [
 [[package]]
 name = "bitcoin-internals"
 version = "0.4.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "hex-conservative 0.3.0",
 ]
@@ -64,31 +57,17 @@ checksum = "0b47c4ab7a93edb0c7198c5535ed9b52b63095f4e9b45279c6736cec4b856baf"
 [[package]]
 name = "bitcoin-io"
 version = "0.2.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "bitcoin-internals",
  "bitcoin_hashes 0.16.0",
-]
-
-[[package]]
-name = "bitcoin-p2p-messages"
-version = "0.1.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
-dependencies = [
- "bitcoin",
- "bitcoin-internals",
- "bitcoin-io 0.2.0",
- "bitcoin-units",
- "bitcoin_hashes 0.16.0",
- "hex-conservative 0.3.0",
 ]
 
 [[package]]
 name = "bitcoin-primitives"
 version = "0.101.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
- "arrayvec",
  "bitcoin-internals",
  "bitcoin-units",
  "bitcoin_hashes 0.16.0",
@@ -97,8 +76,8 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-units"
-version = "1.0.0-rc.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+version = "0.2.0"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "bitcoin-internals",
  "serde",
@@ -117,7 +96,7 @@ dependencies = [
 [[package]]
 name = "bitcoin_hashes"
 version = "0.16.0"
-source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=330e67a917091111ec50bce9a2de26bc5641ac34#330e67a917091111ec50bce9a2de26bc5641ac34"
+source = "git+https://github.com/rust-bitcoin/rust-bitcoin.git?rev=263db9057bc182e755e297b8dca1da21e9d919af#263db9057bc182e755e297b8dca1da21e9d919af"
 dependencies = [
  "bitcoin-internals",
  "hex-conservative 0.3.0",
@@ -244,7 +223,6 @@ name = "rust_bitcoin_lib"
 version = "0.1.0"
 dependencies = [
  "bitcoin",
- "bitcoin-p2p-messages",
 ]
 
 [[package]]
