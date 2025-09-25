@@ -1,3 +1,5 @@
+#This is a fork of bitcoinfuzz project, wip on adding BIP32 fuzz targets.
+Original readme follows:
 # bitcoinfuzz
 
 Differential Fuzzing of Bitcoin implementations and libraries.
