@@ -260,18 +260,15 @@ pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: us
 
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: usize) -> *mut c_char {
-
+""" only for a showcase, not a real target yet"""
     let secp = Secp256k1::new();
-    let seed: [u8; 16] = [
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    ];
+    let seed = slice::from_raw_parts(data, len);
 
     let sk = Xpriv::new_master(NetworkKind::Main, &seed);
     let mut pk =  Xpub::from_xpriv(&secp, &sk);
-
+    if pk.to_string().is_empty() {
+        return std::ptr::null_mut();
+    }
     for i in 0..256 {
         match pk.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL){
             Ok(next) => pk = next,
@@ -283,6 +280,22 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: us
     }
     str_to_c_string(&pk.to_string())
     
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
+    data: *const u8,
+    len: usize
+) -> *mut c_char {
+    let seed = slice::from_raw_parts(data, len);
+    let sk = Xpriv::new_master(NetworkKind::Main, &seed); //new_master returns Xpriv, cannot match on Result
+    if sk.to_string().is_empty() {
+        return std::ptr::null_mut();
+    }
+    eprintln!("Input seed (len={}): {:x?}", seed.len(), seed);
+    eprintln!("Generated Xpriv: {}", sk);
+
+    str_to_c_string(&sk.to_string())
 }
 
 unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {

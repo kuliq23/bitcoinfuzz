@@ -10,3 +10,4 @@ extern "C" int32_t rust_bitcoin_cmpctblocks_parse(const uint8_t *data, size_t le
 extern "C" void free_c_string(char* ptr);
 extern "C" char* rust_bitcoin_parse_p2p_message(const uint8_t *data, size_t len);
 extern "C" char* rust_bitcoin_bip32_derive_xpub(const uint8_t *data, size_t len);
+extern "C" char* rust_bitcoin_bip32_master_keygen(const uint8_t *data, size_t len);
