@@ -292,8 +292,8 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
     if sk.to_string().is_empty() {
         return std::ptr::null_mut();
     }
-    eprintln!("Input seed (len={}): {:x?}", seed.len(), seed);
-    eprintln!("Generated Xpriv: {}", sk);
+    //eprintln!("Input seed (len={}): {:x?}", seed.len(), seed);
+    eprintln!("Master key RUST: {}", sk);
 
     str_to_c_string(&sk.to_string())
 }
