@@ -1,4 +1,7 @@
-#This is a fork of bitcoinfuzz project, wip on adding BIP32 fuzz targets.
+# This is a fork of bitcoinfuzz project, wip on adding BIP32 fuzz targets.
+You can try the first BIP32 target for two modules e.g. like this:
+$CXXFLAGS=" -DNBITCOIN -DRUST_BITCOIN" ./auto_build.sh
+$FUZZ=bip32_master_keygen CXXFLAGS="-DNBITCOIN -DRUST_BITCOIN" ./bitcoinfuzz -runs=300
 Original readme follows:
 # bitcoinfuzz
 
