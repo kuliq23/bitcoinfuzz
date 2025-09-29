@@ -260,7 +260,7 @@ pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: us
 
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: usize) -> *mut c_char {
-""" only for a showcase, not a real target yet"""
+//only for a showcase, not a real target yet
     let secp = Secp256k1::new();
     let seed = slice::from_raw_parts(data, len);
 
