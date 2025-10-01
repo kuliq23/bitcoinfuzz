@@ -21,8 +21,8 @@ namespace bitcoinfuzz
             std::optional<std::string> addrv2_parse(std::span<const uint8_t> buffer) const override;
             std::optional<int> cmpctblocks_parse(std::span<const uint8_t> buffer) const override;
             std::optional<std::string> parse_p2p_message(std::span<const uint8_t> buffer) const override;
-            std::optional<std::string> bip32_derive_xpub(std::span<const uint8_t> buffer) const override;
             std::optional<std::string> bip32_master_keygen(std::span<const uint8_t> buffer) const override;
+            std::optional<std::string> bip32_parse_random_path(std::span<const uint8_t> buffer) const override;
             ~Rustbitcoin() noexcept override = default;
         };
 

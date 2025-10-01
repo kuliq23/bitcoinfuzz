@@ -83,12 +83,11 @@ namespace bitcoinfuzz
         return std::nullopt;
     }
 
-    std::optional<std::string> BaseModule::bip32_derive_xpub(std::span<const uint8_t> buffer) const
+    std::optional<std::string> BaseModule::bip32_master_keygen(std::span<const uint8_t> buffer) const
     {
         return std::nullopt;
     }
-
-    std::optional<std::string> BaseModule::bip32_master_keygen(std::span<const uint8_t> buffer) const
+    std::optional<std::string> BaseModule::bip32_parse_random_path(std::span<const uint8_t> buffer) const
     {
         return std::nullopt;
     }

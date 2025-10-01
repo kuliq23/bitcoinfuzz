@@ -413,30 +413,6 @@ namespace bitcoinfuzz
         }
     }
 
-    void Driver::Bip32DeriveXpubTarget(std::span<const uint8_t> buffer) const
-    {
-        std::optional<std::string> last_response{std::nullopt};
-        std::string last_module_name;
-
-        for (auto &module : modules)
-        {
-            std::optional<std::string> res{module.second->bip32_derive_xpub(buffer)};
-            if (!res.has_value()) continue;
-            if (last_response.has_value()) {
-                if (*res != *last_response) {
-                    std::cout << "BIP32 xpub derivation failed" << std::endl;
-                    std::cout << "Module: " << module.first << std::endl;
-                    std::cout << "Result: " << *res << std::endl;
-                    std::cout << "Module: " << last_module_name << std::endl;
-                    std::cout << "Result: " << *last_response << std::endl;
-                }
-                assert(*res == *last_response);
-            }
-
-            last_response = res.value();
-            last_module_name = module.first;
-        }
-    }
     void Driver::Bip32MasterKeygenTarget(std::span<const uint8_t> buffer) const
     {
         std::optional<std::string> last_response{std::nullopt};
@@ -449,6 +425,30 @@ namespace bitcoinfuzz
             if (last_response.has_value()) {
                 if (*res != *last_response) {
                     std::cout << "BIP32 master keygen failed" << std::endl;
+                    std::cout << "Module: " << module.first << std::endl;
+                    std::cout << "Result: " << *res << std::endl;
+                    std::cout << "Module: " << last_module_name << std::endl;
+                    std::cout << "Result: " << *last_response << std::endl;
+                }
+                assert(*res == *last_response);
+            }
+
+            last_response = res.value();
+            last_module_name = module.first;
+        }
+    }
+    void Driver::Bip32ParseRandomPathTarget(std::span<const uint8_t> buffer) const
+    {
+        std::optional<std::string> last_response{std::nullopt};
+        std::string last_module_name;
+
+        for (auto &module : modules)
+        {
+            std::optional<std::string> res{module.second->bip32_parse_random_path(buffer)};
+            if (!res.has_value()) continue;
+            if (last_response.has_value()) {
+                if (*res != *last_response) {
+                    std::cout << "BIP32 parse random path failed" << std::endl;
                     std::cout << "Module: " << module.first << std::endl;
                     std::cout << "Result: " << *res << std::endl;
                     std::cout << "Module: " << last_module_name << std::endl;
@@ -495,10 +495,10 @@ namespace bitcoinfuzz
             this->ParseLightningP2pMessageTarget(buffer);
         } else if (target == "transaction_eval") {
             this->TransactionEvalTarget(buffer);
-        } else if (target == "bip32_derive_xpub") {
-            this->Bip32DeriveXpubTarget(buffer);
         } else if (target == "bip32_master_keygen") {
             this->Bip32MasterKeygenTarget(buffer);
+        } else if (target == "bip32_parse_random_path") {
+            this->Bip32ParseRandomPathTarget(buffer);
         } else {
             std::cout << "Target not defined!" << std::endl;
             assert(false);

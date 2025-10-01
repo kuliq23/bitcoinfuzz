@@ -6,11 +6,10 @@ use bitcoin::consensus::{deserialize_partial, encode, serialize};
 use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
 
-use bitcoin::key::Secp256k1;
-use bitcoin::bip32::Xpub;
+
 use bitcoin::bip32::Xpriv;
 use bitcoin::NetworkKind;
-use bitcoin::bip32::ChildNumber;
+
 
 use p2p::address::AddrV2;
 use p2p::message::{AddrV2Payload, RawNetworkMessage};
@@ -258,29 +257,6 @@ pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: us
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_bip32_derive_xpub(data: *const u8, len: usize) -> *mut c_char {
-//only for a showcase, not a real target yet
-    let secp = Secp256k1::new();
-    let seed = slice::from_raw_parts(data, len);
-
-    let sk = Xpriv::new_master(NetworkKind::Main, &seed);
-    let mut pk =  Xpub::from_xpriv(&secp, &sk);
-    if pk.to_string().is_empty() {
-        return std::ptr::null_mut();
-    }
-    for i in 0..256 {
-        match pk.derive_xpub(&secp, &ChildNumber::ZERO_NORMAL){
-            Ok(next) => pk = next,
-            Err(e) => {
-                eprintln!("derivation failed at step {}: {}", i, e);
-                return std::ptr::null_mut();
-            }
-        }
-    }
-    str_to_c_string(&pk.to_string())
-    
-}
 
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
@@ -296,6 +272,22 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
     eprintln!("Master key RUST: {}", sk);
 
     str_to_c_string(&sk.to_string())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_parse_random_path(data: *const u8, len: usize) -> *mut c_char {
+    let path_data = slice::from_raw_parts(data, len);
+    //let path_data: &[u8] = b"m/44'/0'/0'/0/0"; goes through
+    let path_str = match std::str::from_utf8(path_data) {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    let path = match bitcoin::bip32::DerivationPath::from_str(path_str) {
+        Ok(p) => p,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    //eprintln!("Parsed path RUST: {}", path);
+    str_to_c_string(&format!("{}", path))
 }
 
 unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {
