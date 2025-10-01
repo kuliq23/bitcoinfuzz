@@ -277,7 +277,7 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_parse_random_path(data: *const u8, len: usize) -> *mut c_char {
     let path_data = slice::from_raw_parts(data, len);
-    //let path_data: &[u8] = b"m/44'/0'/0'/0/0"; goes through
+    //let path_data: &[u8] = b"m/44'/0'/0'/0/0"; //goes through
     let path_str = match std::str::from_utf8(path_data) {
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),

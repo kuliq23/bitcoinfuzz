@@ -69,7 +69,26 @@ public static class Bridge
         return strPtr;
         
     }
-
+    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_parse_random_path")]
+    public static IntPtr BIP32ParseRandomPath(IntPtr dataPtr, UIntPtr len)
+    {
+        var input = new byte[(int)len];
+        Marshal.Copy(dataPtr, input, 0, (int)len);
+        //input to utf8 string
+        string path = System.Text.Encoding.UTF8.GetString(input);
+        //string path = "m/44'/0'/0'/0/0"; // goes through
+        try
+        {
+            var parsed_path = new KeyPath(path);
+            IntPtr strPtr = Marshal.StringToHGlobalAnsi(parsed_path.ToString());
+            //Console.WriteLine("Parsed path NBIT: " + parsed_path.ToString());
+            return strPtr;
+        }
+        catch
+        {
+            return IntPtr.Zero;
+        }
+    }
     [UnmanagedCallersOnly(EntryPoint = "nbitcoin_free_c_string")]
     public static void FreeString(IntPtr ptr)
     {
