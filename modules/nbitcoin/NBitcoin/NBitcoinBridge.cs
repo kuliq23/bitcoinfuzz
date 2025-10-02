@@ -64,7 +64,6 @@ public static class Bridge
         var seed = new byte[(int)len];
         Marshal.Copy(dataPtr, seed, 0, (int)len);
         ExtKey sk = ExtKey.CreateFromSeed(seed);
-        Console.WriteLine("Master key NBIT: " + sk.GetWif(Network.Main).ToString());
         IntPtr strPtr = Marshal.StringToHGlobalAnsi(sk.GetWif(Network.Main).ToString());
         return strPtr;
         

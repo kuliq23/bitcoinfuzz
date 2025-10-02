@@ -264,12 +264,10 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
     len: usize
 ) -> *mut c_char {
     let seed = slice::from_raw_parts(data, len);
-    let sk = Xpriv::new_master(NetworkKind::Main, &seed); //new_master returns Xpriv, cannot match on Result
+    let sk = Xpriv::new_master(NetworkKind::Main, &seed);
     if sk.to_string().is_empty() {
         return std::ptr::null_mut();
     }
-    //eprintln!("Input seed (len={}): {:x?}", seed.len(), seed);
-    eprintln!("Master key RUST: {}", sk);
 
     str_to_c_string(&sk.to_string())
 }
@@ -277,7 +275,7 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_master_keygen(
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_parse_random_path(data: *const u8, len: usize) -> *mut c_char {
     let path_data = slice::from_raw_parts(data, len);
-    //let path_data: &[u8] = b"m/44'/0'/0'/0/0"; //goes through
+
     let path_str = match std::str::from_utf8(path_data) {
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
@@ -286,7 +284,6 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_parse_random_path(data: *const u8, l
         Ok(p) => p,
         Err(_) => return std::ptr::null_mut(),
     };
-    //eprintln!("Parsed path RUST: {}", path);
     str_to_c_string(&format!("{}", path))
 }
 
