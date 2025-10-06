@@ -5,6 +5,7 @@ use bitcoin::block::BlockUncheckedExt;
 use bitcoin::consensus::{deserialize_partial, encode, serialize};
 use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
+use bitcoin::bip32::Xpub;
 use p2p::address::AddrV2;
 use p2p::message::{AddrV2Payload, RawNetworkMessage};
 use p2p::Magic;
@@ -253,4 +254,25 @@ pub unsafe extern "C" fn rust_bitcoin_cmpctblocks_parse(data: *const u8, len: us
 
 unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {
     CStr::from_ptr(input).to_str()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
+    data: *const u8,
+    len: usize,
+) -> *mut c_char {
+    let data_slice = slice::from_raw_parts(data, len); 
+
+    let xpub_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz"; // example
+
+    match Xpub::from_str(xpub_str) {
+        Ok(xpub) => {
+            println!("Parsed Xpub successfully: {:?}", xpub);
+            str_to_c_string(&xpub.to_string())
+        }
+        Err(e) => {
+            eprintln!("Failed to parse Xpub: {:?}", e);
+            return std::ptr::null_mut();
+        }
+    }
 }
