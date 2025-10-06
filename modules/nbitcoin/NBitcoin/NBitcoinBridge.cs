@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using NBitcoin.Scripting;
 using NBitcoin.WalletPolicies;
 
+
 namespace NBitcoin.CppBridge;
 
 public static class Bridge
@@ -57,5 +58,29 @@ public static class Bridge
         {
             return false;
         }
+    }
+    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_deserialize_key_xpub_xprv")]
+    public static IntPtr Bip32DeserializeKeyXpubXprv(IntPtr inputPtr)
+    {
+        string input = Marshal.PtrToStringUTF8(inputPtr);
+        input = "xpub" + input;
+        //input = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
+        try
+        {
+            var xpub = NBitcoin.ExtPubKey.Parse(input, Network.Main);
+            string result = xpub.ToString();
+            Console.WriteLine($"Parsed Xpub successfully: {result}");
+            return Marshal.StringToCoTaskMemUTF8(result);
+        }
+        catch
+        {
+            //Console.WriteLine($"Failed to parse Xpub: {input}");
+            return IntPtr.Zero;
+        }
+    }
+    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_free_c_string")]
+    public static void FreeString(IntPtr ptr)
+    {
+        if (ptr != IntPtr.Zero) Marshal.FreeHGlobal(ptr);
     }
 }
