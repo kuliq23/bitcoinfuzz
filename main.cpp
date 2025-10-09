@@ -52,7 +52,7 @@
 #include <modules/lightningkmp/module.h>
 #endif
 
-#if defined(CUSTOM_MUTATOR_BOLT11) || defined(CUSTOM_MUTATOR_BOLT12_OFFER)
+#if defined(CUSTOM_MUTATOR_BOLT11) || defined(CUSTOM_MUTATOR_BOLT12_OFFER) || defined(CUSTOM_MUTATOR_EXTENDED)
 #include <modules/custommutator/bech32.h>
 #include <modules/custommutator/customcrossover.h>
 #endif
@@ -506,6 +506,41 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
     return encoded.size();
 }
 #endif
+#ifdef CUSTOM_MUTATOR_EXTENDED_KEY_BASE58 
+// Custom mutator for Base58 encoded extended keys (xpub/xprv).
+// so far only adds the "xpub" prefix and maps all bytes to printable ASCII (easier for showcase)
+// BASE 58 lib to be added
+extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
+extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
+                                         unsigned int seed);
+
+size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
+                               unsigned int seed) {
+    // First, mutate the data using LibFuzzer's default mutator
+    size_t new_size = LLVMFuzzerMutate(fuzz_data, size, max_size);
+
+    const char* prefix = "xpub";
+    size_t prefix_len = 4;
+    //ascii payload
+    size_t out_capacity = max_size;
+    if (out_capacity < prefix_len) return 0;
+    size_t out_idx = 0;
+    // add prefix
+    std::memcpy(fuzz_data, prefix, prefix_len);
+    out_idx += prefix_len;
+    size_t space_left = out_capacity - out_idx;
+
+    // map to printable ascii
+    for (size_t i = 0; i < new_size && space_left > 0; ++i) {
+        uint8_t b = fuzz_data[i];
+        char c = static_cast<char>(0x20 + (b % 95)); // printable ASCII range 0x20-0x7E
+        fuzz_data[out_idx++] = c;
+        --space_left;
+    }
+    size_t final_size = out_idx;
+    return final_size;
+}
+#endif
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
 {
@@ -562,6 +597,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
 
 #ifdef CUSTOM_MUTATOR_P2P_LIGHTNING_MESSAGE
   module_logger.addCustomMutator("Lightning P2P Message Custom Mutator");
+#endif
+#ifdef CUSTOM_MUTATOR_EXTENDED_KEY_BASE58
+  module_logger.addCustomMutator("Extended Key Base58 Custom Mutator");
 #endif
 
   module_logger.logModules();
