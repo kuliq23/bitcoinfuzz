@@ -63,18 +63,15 @@ public static class Bridge
     public static IntPtr Bip32DeserializeKeyXpubXprv(IntPtr inputPtr)
     {
         string input = Marshal.PtrToStringUTF8(inputPtr);
-        input = "xpub" + input;
         //input = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
         try
         {
             var xpub = NBitcoin.ExtPubKey.Parse(input, Network.Main);
             string result = xpub.ToString();
-            Console.WriteLine($"Parsed Xpub successfully: {result}");
             return Marshal.StringToCoTaskMemUTF8(result);
         }
         catch
         {
-            //Console.WriteLine($"Failed to parse Xpub: {input}");
             return IntPtr.Zero;
         }
     }
