@@ -184,6 +184,44 @@ func LndParseP2pLightningMessage(data *C.char, length C.int) *C.char {
 		sb.WriteString(fmt.Sprintf("%d", fc.FundingPoint.Index))
 		sb.WriteString(";SIGNATURE=")
 		sb.WriteString(fmt.Sprintf("%x", fc.CommitSig.ToSignatureBytes()))
+	case 35:
+		fs := message.(*lnwire.FundingSigned)
+		_, err := fs.CommitSig.ToSignature()
+		if err != nil {
+			return C.CString("")
+		}
+		// If there is any extra data (a message with more than 98 bytes) we will
+		// skip the message, because rust-lightning will return an error for
+		// messages that are too big.
+		if fs.ExtraData != nil {
+			return nil
+		}
+		sb.WriteString("MSG_TYPE=funding_signed;CHANNEL_ID=")
+		sb.WriteString(fmt.Sprintf("%x", fs.ChanID[:]))
+		sb.WriteString(";SIGNATURE=")
+		sb.WriteString(fmt.Sprintf("%x", fs.CommitSig.ToSignatureBytes()))
+	case 36:
+		channelReadyMsg := message.(*lnwire.ChannelReady)
+		tlvMap, err := channelReadyMsg.ExtraData.ExtractRecords()
+		if err != nil {
+			return C.CString("")
+		}
+		// LND supports extra even TLVs for simple taproot channels and gossip v2.
+		// Since other implementations do not, we return an error to maintain
+		// compatibility.
+		for key := range tlvMap {
+			if key%2 == 0 {
+				return C.CString("")
+			}
+		}
+		sb.WriteString("MSG_TYPE=channel_ready;CHANNEL_ID=")
+		sb.WriteString(fmt.Sprintf("%x", channelReadyMsg.ChanID[:]))
+		sb.WriteString(";POINT=")
+		sb.WriteString(fmt.Sprintf("%x", channelReadyMsg.NextPerCommitmentPoint.SerializeCompressed()))
+		if channelReadyMsg.AliasScid != nil {
+			sb.WriteString(";ALIAS=")
+			sb.WriteString(fmt.Sprintf("%d", channelReadyMsg.AliasScid.ToUint64()))
+		}
 	}
 
 	return C.CString(sb.String())
