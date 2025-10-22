@@ -40,8 +40,6 @@ pub unsafe extern "C" fn rust_bitcoin_des_block(
     _out_len: *mut usize,
 ) -> *mut c_char {
     let data_slice = std::slice::from_raw_parts(data, len);
-    let datastr = std::str::from_utf8(data_slice);
-    println!("Data Slice {:?}", datastr);
     let res = deserialize_partial::<Block>(data_slice);
 
     match res {
@@ -268,12 +266,15 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
+    //println!("Data Slice {:?}", xpub_str);
     //let xpub_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz"; // example
     match Xpub::from_str(&xpub_str) {
         Ok(xpub) => {
+            println!("SUCCESS!! Parsed Xpub: {:?}", xpub);
             str_to_c_string(&xpub.to_string())
         }
         Err(e) => {
+            //println!("Failed to parse Xpub: {:?}", e);
             return std::ptr::null_mut();
         }
     }

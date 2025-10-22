@@ -512,35 +512,49 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
 // Custom mutator for Base58 encoded extended keys (xpub/xprv).
 // so far only adds the "xpub" prefix and maps all bytes to printable ASCII (easier for showcase)
 // BASE 58 lib to be added
+//tried to add modules/bitcoin/hash58.h but thsi is simpler....
+
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
-                                         unsigned int seed);
+                                          unsigned int seed);
+
+static const char BASE58_ALPHABET[] =
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                unsigned int seed) {
-    // First, mutate the data using LibFuzzer's default mutator
+    // Let libFuzzer mutate first
     size_t new_size = LLVMFuzzerMutate(fuzz_data, size, max_size);
 
-    const char* prefix = "xpub";
-    size_t prefix_len = 4;
-    //ascii payload
-    size_t out_capacity = max_size;
-    if (out_capacity < prefix_len) return 0;
-    size_t out_idx = 0;
-    // add prefix
-    std::memcpy(fuzz_data, prefix, prefix_len);
-    out_idx += prefix_len;
-    size_t space_left = out_capacity - out_idx;
-
-    // map to printable ascii
-    for (size_t i = 0; i < new_size && space_left > 0; ++i) {
-        uint8_t b = fuzz_data[i];
-        char c = static_cast<char>(0x20 + (b % 95)); // printable ASCII range 0x20-0x7E
-        fuzz_data[out_idx++] = c;
-        --space_left;
+    // 78-byte buffer from fuzz data
+    uint8_t buf[78];
+    for (size_t i = 0; i < 78; ++i) {
+        buf[i] = new_size ? fuzz_data[i % new_size] : 0;
     }
-    size_t final_size = out_idx;
-    return final_size;
+
+    // Map buffer to Base58 manually
+    std::string encoded;
+    encoded.reserve(78);
+    for (size_t i = 0; i < 78; ++i) {
+        encoded += BASE58_ALPHABET[buf[i] % (sizeof(BASE58_ALPHABET)-1)];
+    }
+
+    // Prepend "xpub"
+    std::string final_str = "xpub" + encoded;
+    //final_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
+
+    // Copy back to fuzz_data, truncate to max_size
+    size_t final_len = std::min(final_str.size(), max_size);
+    if (final_len > 0) {
+        std::memcpy(fuzz_data, final_str.data(), final_len);
+    }
+
+    //printf("Encoded xprv: %s\n", final_str.c_str());
+
+    //add checksum
+
+
+    return final_len;
 }
 #endif
 
