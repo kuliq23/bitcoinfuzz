@@ -40,6 +40,8 @@ pub unsafe extern "C" fn rust_bitcoin_des_block(
     _out_len: *mut usize,
 ) -> *mut c_char {
     let data_slice = std::slice::from_raw_parts(data, len);
+    let datastr = std::str::from_utf8(data_slice);
+    println!("Data Slice {:?}", datastr);
     let res = deserialize_partial::<Block>(data_slice);
 
     match res {

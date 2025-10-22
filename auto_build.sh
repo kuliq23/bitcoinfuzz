@@ -83,9 +83,12 @@ custom_mutator_bolt12_offer() {
 custom_mutator_p2p_message() {
     execute_in_module "modules/custommutator" "$1"
 }
+custom_mutator_extended_key_base58() {
+    execute_in_module "modules/custommutator" "$1"
+}
 
 # Define the list of modules
-modules="bitcoin_core rust_bitcoin rust_miniscript btcd nbitcoin embit lnd ldk nlightning clightning eclair lightning_kmp custom_mutator_bolt11 custom_mutator_bolt12_offer custom_mutator_p2p_message"
+modules="bitcoin_core rust_bitcoin rust_miniscript btcd nbitcoin embit lnd ldk nlightning clightning eclair lightning_kmp custom_mutator_bolt11 custom_mutator_bolt12_offer custom_mutator_p2p_message custom_mutator_extended_key_base58"
 
 # Full clean: runs `make clean` in all module directories
 full_clean() {
