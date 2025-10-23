@@ -275,7 +275,7 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
         }
         Err(e) => {
             //println!("Failed to parse Xpub: {:?}", e);
-            return std::ptr::null_mut();
+            str_to_c_string("")
         }
     }
 }

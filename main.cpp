@@ -513,7 +513,8 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
 // so far only adds the "xpub" prefix and maps all bytes to printable ASCII (easier for showcase)
 // BASE 58 lib to be added
 //tried to add modules/bitcoin/hash58.h but thsi is simpler....
-
+#include "modules/bitcoin/base58.h" //not used as its not compiled, need to add to rustbitcoin build
+#define EXTKEY_CHAR_SIZE_WITHOUT_XPUB 107  
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                           unsigned int seed);
@@ -527,31 +528,33 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
     size_t new_size = LLVMFuzzerMutate(fuzz_data, size, max_size);
 
     // 78-byte buffer from fuzz data
-    uint8_t buf[78];
-    for (size_t i = 0; i < 78; ++i) {
-        buf[i] = new_size ? fuzz_data[i % new_size] : 0;
+    uint8_t buf[EXTKEY_CHAR_SIZE_WITHOUT_XPUB];
+    for (size_t i = 0; i < EXTKEY_CHAR_SIZE_WITHOUT_XPUB; ++i) {
+        buf[i] = new_size ? fuzz_data[i % new_size] : 0; // Wrap around if new_size < 78
     }
 
     // Map buffer to Base58 manually
     std::string encoded;
-    encoded.reserve(78);
-    for (size_t i = 0; i < 78; ++i) {
-        encoded += BASE58_ALPHABET[buf[i] % (sizeof(BASE58_ALPHABET)-1)];
+    encoded.reserve(EXTKEY_CHAR_SIZE_WITHOUT_XPUB);
+    for (size_t i = 0; i < EXTKEY_CHAR_SIZE_WITHOUT_XPUB; ++i) {
+        encoded += BASE58_ALPHABET[buf[i] % (sizeof(BASE58_ALPHABET)-1)]; // -1 to exclude null terminator
     }
 
-    // Prepend "xpub"
+    // Prepend "xpub" to make it atleast feasible to hit a vlid extended key
     std::string final_str = "xpub" + encoded;
     //final_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
-
-    // Copy back to fuzz_data, truncate to max_size
+    //             xpub5w2hv4so3uzvt273HHHHHHHHHHHHHHHHHHxHyHHHHHHHHHHHHHHvHHHHHHHHHHxHHHHHHHHHHHHHHHHuzvt273HHHHHHHHHHHHHH5w2hv4s
+    // Copy back to fuzz_data, truncate to max_size to avoid overflow just in case
     size_t final_len = std::min(final_str.size(), max_size);
     if (final_len > 0) {
         std::memcpy(fuzz_data, final_str.data(), final_len);
     }
 
-    //printf("Encoded xprv: %s\n", final_str.c_str());
+    //printf("Encoded xpub: %s\n", final_str.c_str());
 
-    //add checksum
+    //add checksum ONLY WORKS WITH BTCCORE LOADED (so far)
+    //std::string test58 = EncodeBase58Check(std::span<const unsigned char>(fuzz_data, final_len));
+    //printf("With checksum: %s\n", test58.c_str());
 
 
     return final_len;

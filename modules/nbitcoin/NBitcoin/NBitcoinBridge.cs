@@ -72,7 +72,7 @@ public static class Bridge
         }
         catch
         {
-            return IntPtr.Zero;
+            return Marshal.StringToCoTaskMemUTF8("");
         }
     }
     [UnmanagedCallersOnly(EntryPoint = "nbitcoin_free_c_string")]
