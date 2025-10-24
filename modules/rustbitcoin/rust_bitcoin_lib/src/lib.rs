@@ -261,20 +261,16 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
     data: *const u8,
     len: usize,
 ) -> *mut c_char {
-    let data_slice = slice::from_raw_parts(data, len); 
+    let data_slice = slice::from_raw_parts(data, len);
     let xpub_str = match std::str::from_utf8(data_slice) {
         Ok(s) => s,
-        Err(_) => return std::ptr::null_mut(),
+        Err(_) => return str_to_c_string("could not convert to string"),
     };
-    //println!("Data Slice {:?}", xpub_str);
-    //let xpub_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz"; // example
     match Xpub::from_str(&xpub_str) {
         Ok(xpub) => {
-            println!("SUCCESS!! Parsed Xpub: {:?}", xpub);
             str_to_c_string(&xpub.to_string())
         }
         Err(e) => {
-            //println!("Failed to parse Xpub: {:?}", e);
             str_to_c_string("")
         }
     }

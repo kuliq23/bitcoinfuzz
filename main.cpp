@@ -510,10 +510,14 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
 #endif
 #ifdef CUSTOM_MUTATOR_EXTENDED_KEY_BASE58 
 // Custom mutator for Base58 encoded extended keys (xpub/xprv).
-// so far only adds the "xpub" prefix and maps all bytes to printable ASCII (easier for showcase)
-// BASE 58 lib to be added
-//tried to add modules/bitcoin/hash58.h but thsi is simpler....
-#include "modules/bitcoin/base58.h" //not used as its not compiled, need to add to rustbitcoin build
+// so far only adds the "xpub" prefix and converts random data to base58
+// BASE 58 lib to be added?
+// add base58.h like this? 
+// #include <modules/custommutator/base58.h>
+// or borrow from bitcoin core? 
+// #include <modules/bitcoin/base58.h>
+// or custom implement base58 encode here?
+// note that base58.h requires linking other bitcoin core files (s)
 #define EXTKEY_CHAR_SIZE_WITHOUT_XPUB 107  
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
@@ -527,7 +531,7 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
     // Let libFuzzer mutate first
     size_t new_size = LLVMFuzzerMutate(fuzz_data, size, max_size);
 
-    // 78-byte buffer from fuzz data
+    // fill buffer with fuzz data
     uint8_t buf[EXTKEY_CHAR_SIZE_WITHOUT_XPUB];
     for (size_t i = 0; i < EXTKEY_CHAR_SIZE_WITHOUT_XPUB; ++i) {
         buf[i] = new_size ? fuzz_data[i % new_size] : 0; // Wrap around if new_size < 78
@@ -542,6 +546,7 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
 
     // Prepend "xpub" to make it atleast feasible to hit a vlid extended key
     std::string final_str = "xpub" + encoded;
+
     //final_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
     //             xpub5w2hv4so3uzvt273HHHHHHHHHHHHHHHHHHxHyHHHHHHHHHHHHHHvHHHHHHHHHHxHHHHHHHHHHHHHHHHuzvt273HHHHHHHHHHHHHH5w2hv4s
     // Copy back to fuzz_data, truncate to max_size to avoid overflow just in case
@@ -552,7 +557,7 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
 
     //printf("Encoded xpub: %s\n", final_str.c_str());
 
-    //add checksum ONLY WORKS WITH BTCCORE LOADED (so far)
+    //Test borriwing b58 from bitcoincore - ONLY WORKS WITH BTCCORE LOADED (so far)- IGNORE this
     //std::string test58 = EncodeBase58Check(std::span<const unsigned char>(fuzz_data, final_len));
     //printf("With checksum: %s\n", test58.c_str());
 
