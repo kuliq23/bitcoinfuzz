@@ -518,6 +518,7 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
 // #include <modules/bitcoin/base58.h>
 // or custom implement base58 encode here?
 // note that base58.h requires linking other bitcoin core files (s)
+//#include <modules/custommutator/base58.h>
 #define EXTKEY_CHAR_SIZE_WITHOUT_XPUB 107  
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,

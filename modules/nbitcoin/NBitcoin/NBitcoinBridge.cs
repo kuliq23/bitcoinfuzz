@@ -62,24 +62,21 @@ public static class Bridge
     [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_deserialize_key_xpub_xprv")]
     public static IntPtr Bip32DeserializeKeyXpubXprv(IntPtr inputPtr)
     {   
+        string? input = null;
         try
         {
-            string input = Marshal.PtrToStringUTF8(inputPtr);
+            input = Marshal.PtrToStringUTF8(inputPtr);
         }
         catch
         {
             return Marshal.StringToCoTaskMemUTF8("could not convert to string");
         }
-        try
-        {
-            var xpub = NBitcoin.ExtPubKey.Parse(input, Network.Main);
-            string result = xpub.ToString();
-            return Marshal.StringToCoTaskMemUTF8(result);
-        }
-        catch
-        {
-            return Marshal.StringToCoTaskMemUTF8("");
-        }
+
+        var xpub = NBitcoin.ExtPubKey.Parse(input, Network.Main);
+        string result = xpub.ToString();
+        return Marshal.StringToCoTaskMemUTF8(result);
+
+
     }
     [UnmanagedCallersOnly(EntryPoint = "nbitcoin_free_c_string")]
     public static void FreeString(IntPtr ptr)
