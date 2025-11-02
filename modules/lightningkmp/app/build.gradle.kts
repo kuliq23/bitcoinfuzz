@@ -21,6 +21,8 @@ repositories {
 dependencies {
     // lightning-kmp
     api("fr.acinq.lightning:lightning-kmp-core:${libs.versions.lightningkmp.get()}")
+    // bitcoinj
+    api("org.bitcoinj:bitcoinj-core:${libs.versions.bitcoinj.get()}")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

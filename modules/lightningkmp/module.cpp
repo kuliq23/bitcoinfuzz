@@ -15,6 +15,8 @@ static JavaVM* jvm = nullptr;
 static jclass decoderClass = nullptr;
 static jmethodID decodeMethodInvoice = nullptr;
 static jmethodID decodeMethodOffer = nullptr;
+static jclass bitcoinJClass = nullptr;
+static jmethodID getPathMethod = nullptr;
 
 static bool init_jvm() {
     if (jvm != nullptr) {
@@ -27,6 +29,7 @@ static bool init_jvm() {
 
     decoderClass = env->FindClass("invoice/decode/InvoiceDecoder");
     if (!decoderClass) {
+        //std::cerr << "Failed to find LIGHTING\n";
         return false;
     }
     
@@ -42,6 +45,23 @@ static bool init_jvm() {
         return false;
     }
 
+        // Find a BitcoinJ class you want to call, e.g., org.bitcoinj.core.Address
+    bitcoinJClass = env->FindClass("org/bitcoinj/crypto/DeterministicKey");
+    if (!bitcoinJClass) {
+        std::cerr << "Failed to find BitcoinJ Address class\n";
+        return false;
+    }
+
+    bitcoinJClass = static_cast<jclass>(env->NewGlobalRef(bitcoinJClass));
+
+    // Example: getPath(String str) static method
+    getPathMethod = env->GetMethodID(bitcoinJClass, "getDepth",
+                                              "()I");
+    if (!getPathMethod) {
+        std::cerr << "Failed to get BitcoinJ getPath method\n";
+        return false;
+    }
+    std::cout << "Initialized JVM and located classes/methods successfully.\n";
     return true;
 }
 

@@ -3,6 +3,7 @@
 
 [versions]
 lightningkmp = "1.10.5"
+bitcoinj = "0.16.3"
 
 [libraries]
 
