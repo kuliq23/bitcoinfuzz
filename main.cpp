@@ -518,51 +518,75 @@ size_t LLVMFuzzerCustomCrossOver(const uint8_t *in1, size_t in1_size, const uint
 // #include <modules/bitcoin/base58.h>
 // or custom implement base58 encode here?
 // note that base58.h requires linking other bitcoin core files (s)
-//#include <modules/custommutator/base58.h>
+#include <modules/custommutator/base58.h>
 #define EXTKEY_CHAR_SIZE_WITHOUT_XPUB 107  
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                           unsigned int seed);
 
-static const char BASE58_ALPHABET[] =
-    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static constexpr size_t BIP32_PAYLOAD_LEN = 78; 
+static constexpr size_t VERSION_PREFIX_LEN = 4;
 
 size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                unsigned int seed) {
-    // Let libFuzzer mutate first
-    size_t new_size = LLVMFuzzerMutate(fuzz_data, size, max_size);
+    // 1) Decide key type via env
+    const char* env = std::getenv("EXTKEYTYPE");
+    bool want_xprv = (env && std::string(env) == "xprv"); //set to xprv if env set and set to "xprv"
 
-    // fill buffer with fuzz data
-    uint8_t buf[EXTKEY_CHAR_SIZE_WITHOUT_XPUB];
-    for (size_t i = 0; i < EXTKEY_CHAR_SIZE_WITHOUT_XPUB; ++i) {
-        buf[i] = new_size ? fuzz_data[i % new_size] : 0; // Wrap around if new_size < 78
+    // xpub/xprv bytes
+    const uint8_t XPUB_VERSION[4] = {0x04, 0x88, 0xB2, 0x1E}; // xpub
+    const uint8_t XPRV_VERSION[4] = {0x04, 0x88, 0xAD, 0xE4}; // xprv
+
+    std::string input_str(reinterpret_cast<char*>(fuzz_data), size);
+
+    //decode base58check to raw bytes
+    std::vector<unsigned char> decoded;
+    bool ok = DecodeBase58Check(input_str, decoded, /*max_ret_len=*/(int)max_size);
+
+    // if decode failed, use raw input bytes
+    if (!ok) {
+        decoded.assign(input_str.begin(), input_str.end());
     }
 
-    // Map buffer to Base58 manually
-    std::string encoded;
-    encoded.reserve(EXTKEY_CHAR_SIZE_WITHOUT_XPUB);
-    for (size_t i = 0; i < EXTKEY_CHAR_SIZE_WITHOUT_XPUB; ++i) {
-        encoded += BASE58_ALPHABET[buf[i] % (sizeof(BASE58_ALPHABET)-1)]; // -1 to exclude null terminator
+    // pad or truncate to 78 bytes
+    decoded.resize(BIP32_PAYLOAD_LEN, 0x00);
+
+    std::vector<uint8_t> scratch(max_size);
+    // copy the 78-byte payload into scratch[0..77]
+    std::memcpy(scratch.data(), decoded.data(), BIP32_PAYLOAD_LEN);
+
+
+    size_t inner_offset = VERSION_PREFIX_LEN;
+    size_t inner_size = BIP32_PAYLOAD_LEN - VERSION_PREFIX_LEN; 
+
+    // mutate everything
+    size_t returned_size = LLVMFuzzerMutate(
+        scratch.data(),
+        BIP32_PAYLOAD_LEN,
+        max_size
+    );
+    if (returned_size > BIP32_PAYLOAD_LEN) returned_size = BIP32_PAYLOAD_LEN;
+
+    // pad remaining bytes if needed
+    if (returned_size < BIP32_PAYLOAD_LEN) {
+        std::memset(scratch.data() + returned_size, 0, BIP32_PAYLOAD_LEN - returned_size);
     }
 
-    // Prepend "xpub" to make it atleast feasible to hit a vlid extended key
-    std::string final_str = "xpub" + encoded;
+    // set correct version bytes at the start
+    if (want_xprv) {
+        std::memcpy(scratch.data(), XPRV_VERSION, VERSION_PREFIX_LEN);
+    } else {
+        std::memcpy(scratch.data(), XPUB_VERSION, VERSION_PREFIX_LEN);
+    }
 
-    //final_str = "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz";
-    //             xpub5w2hv4so3uzvt273HHHHHHHHHHHHHHHHHHxHyHHHHHHHHHHHHHHvHHHHHHHHHHxHHHHHHHHHHHHHHHHuzvt273HHHHHHHHHHHHHH5w2hv4s
-    // Copy back to fuzz_data, truncate to max_size to avoid overflow just in case
-    size_t final_len = std::min(final_str.size(), max_size);
+    // enmcode back to base58check (with checksumn)
+    std::string final_b58 = EncodeBase58Check(std::span<const unsigned char>(scratch.data(), returned_size));
+
+    // truncate final string to max_size 
+    size_t final_len = std::min(final_b58.size(), max_size);
     if (final_len > 0) {
-        std::memcpy(fuzz_data, final_str.data(), final_len);
+        std::memcpy(fuzz_data, final_b58.data(), final_len);
     }
-
-    //printf("Encoded xpub: %s\n", final_str.c_str());
-
-    //Test borriwing b58 from bitcoincore - ONLY WORKS WITH BTCCORE LOADED (so far)- IGNORE this
-    //std::string test58 = EncodeBase58Check(std::span<const unsigned char>(fuzz_data, final_len));
-    //printf("With checksum: %s\n", test58.c_str());
-
-
     return final_len;
 }
 #endif

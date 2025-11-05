@@ -66,15 +66,42 @@ public static class Bridge
         try
         {
             input = Marshal.PtrToStringUTF8(inputPtr);
+            if (string.IsNullOrEmpty(input))
+            {
+                return Marshal.StringToCoTaskMemUTF8("could not convert to string");
+            }
         }
         catch
         {
             return Marshal.StringToCoTaskMemUTF8("could not convert to string");
         }
-
-        var xpub = NBitcoin.ExtPubKey.Parse(input, Network.Main);
-        string result = xpub.ToString();
-        return Marshal.StringToCoTaskMemUTF8(result);
+        Console.WriteLine("Innbi string: " + input);
+        NBitcoin.ExtKey ext;
+        try
+        {
+            ext = NBitcoin.ExtKey.Parse(input, Network.Main);
+            Console.WriteLine("Parsed as ExtKey");
+            Console.WriteLine("Fingerprint: " + ext.GetPublicKey().GetHDFingerPrint().ToString());
+            Console.WriteLine("Depth: " + ext.Depth);
+            Console.WriteLine("Chain code: " + ext.ChainCode);
+            Console.WriteLine("Private key: " + ext.PrivateKey.ToString(Network.Main));
+            Console.WriteLine("Public key: " + ext.GetPublicKey().ToString());
+            Console.WriteLine("Serialized: " + ext.ToString(Network.Main));
+        }
+        catch
+        {
+            Console.WriteLine("UNABLE TO PARSE");
+            return Marshal.StringToCoTaskMemUTF8("UNABLE TO PARSE");
+        }
+        try 
+        {
+            Console.WriteLine("Parsed key: " + ext.ToString(Network.Main));
+            return Marshal.StringToCoTaskMemUTF8(ext.ToString(Network.Main));
+        }
+        catch
+        {
+            return Marshal.StringToCoTaskMemUTF8("could not convert to string");
+        }
 
 
     }
