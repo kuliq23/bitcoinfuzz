@@ -514,5 +514,37 @@ std::optional<int> Bitcoin::cmpctblocks_parse(std::span<const uint8_t> buffer) c
 
 }
 
+std::optional<std::string> Bitcoin::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+{
+
+    DataStream ds{buffer};
+    std::vector<unsigned char> serialized_key(buffer.begin(), buffer.end());
+
+    try {
+        CExtKey ext_key;
+        CExtPubKey ext_pubkey;
+
+        if (serialized_key.size() != BIP32_EXTKEY_WITH_VERSION_SIZE) {
+            return std::string("UNABLE TO PARSE");
+        }
+
+        if (serialized_key[0] == 0x04 && serialized_key[1] == 0x88 && serialized_key[2] == 0xAD && serialized_key[3] == 0xE4) {
+            // xprv
+            ext_key.Decode(serialized_key.data());
+            printf("Parsed as ExtKey\n");
+            return EncodeExtKey(ext_key);
+        } else if (serialized_key[0] == 0x04 && serialized_key[1] == 0x88 && serialized_key[2] == 0xB2 && serialized_key[3] == 0x1E) {
+            // xpub
+            ext_pubkey.Decode(serialized_key.data());
+            printf("Parsed as ExtKey\n");
+            return EncodeExtPubKey(ext_pubkey);
+            
+        }else {
+            return std::string("UNABLE TO PARSE");
+        }
+    } catch (const std::exception& e) {
+        return std::string(e.what());
+    }
+}
 } // namespace module
 } // namespace bitcoinfuzz

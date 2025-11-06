@@ -81,12 +81,6 @@ public static class Bridge
         {
             ext = NBitcoin.ExtKey.Parse(input, Network.Main);
             Console.WriteLine("Parsed as ExtKey");
-            Console.WriteLine("Fingerprint: " + ext.GetPublicKey().GetHDFingerPrint().ToString());
-            Console.WriteLine("Depth: " + ext.Depth);
-            Console.WriteLine("Chain code: " + ext.ChainCode);
-            Console.WriteLine("Private key: " + ext.PrivateKey.ToString(Network.Main));
-            Console.WriteLine("Public key: " + ext.GetPublicKey().ToString());
-            Console.WriteLine("Serialized: " + ext.ToString(Network.Main));
         }
         catch
         {
@@ -95,7 +89,6 @@ public static class Bridge
         }
         try 
         {
-            Console.WriteLine("Parsed key: " + ext.ToString(Network.Main));
             return Marshal.StringToCoTaskMemUTF8(ext.ToString(Network.Main));
         }
         catch

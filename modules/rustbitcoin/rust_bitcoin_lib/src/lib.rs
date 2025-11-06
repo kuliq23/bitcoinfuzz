@@ -269,6 +269,7 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
     println!("Inrus string: {}", ext_str);
     match Xpub::from_str(&ext_str) {
         Ok(ext) => {
+            println!("Parsed as ExtKey");
             str_to_c_string(&ext.to_string())
         }
         Err(e) => {
