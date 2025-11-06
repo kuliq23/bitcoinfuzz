@@ -167,7 +167,7 @@ services:
       dockerfile: Dockerfile
     environment:
       <<: *common-env
-      CXXFLAGS: "-DBITCOIN_CORE -DRUST_BITCOIN -DNBITCOIN"
+      CXXFLAGS: "-DBITCOIN_CORE -DRUST_BITCOIN -DNBITCOIN -DBTCD"
       FUZZ: bip32_deserialize_key_xpub_xprv
       ASAN_OPTIONS: detect_leaks=0
     volumes:
