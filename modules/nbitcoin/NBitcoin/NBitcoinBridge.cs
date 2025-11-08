@@ -78,8 +78,8 @@ public static class Bridge
         NBitcoin.ExtKey ext;
         try
         {
+            Console.WriteLine("Input   CS: " + input);
             ext = NBitcoin.ExtKey.Parse(input, Network.Main);
-            Console.WriteLine("Parsed as ExtKey");
         }
         catch
         {

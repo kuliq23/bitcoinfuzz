@@ -531,11 +531,19 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                unsigned int seed) {
     // 1) Decide key type via env
     const char* env = std::getenv("EXTKEYTYPE");
-    bool want_xprv = (env && std::string(env) == "xprv"); //set to xprv if env set and set to "xprv"
+    std::string selected_key_type;
+    if (!env) {
+        selected_key_type = "xpub"; // default
+    }
+    else {
+        selected_key_type = std::string(env);
+    }
 
     // xpub/xprv bytes
     const uint8_t XPUB_VERSION[4] = {0x04, 0x88, 0xB2, 0x1E}; // xpub
     const uint8_t XPRV_VERSION[4] = {0x04, 0x88, 0xAD, 0xE4}; // xprv
+    const uint8_t TPUB_VERSION[4] = {0x04, 0x35, 0x87, 0xCF}; // tpub
+    const uint8_t TPRV_VERSION[4] = {0x04, 0x35, 0x83, 0x94}; // tprv
 
     std::string input_str(reinterpret_cast<char*>(fuzz_data), size);
 
@@ -572,10 +580,17 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
         std::memset(scratch.data() + returned_size, 0, BIP32_PAYLOAD_LEN - returned_size);
     }
 
-    // set correct version bytes at the start
-    if (want_xprv) {
+    // set version prefix based on selected key type
+    if (selected_key_type == "xpub") {
+        std::memcpy(scratch.data(), XPUB_VERSION, VERSION_PREFIX_LEN);
+    } else if (selected_key_type == "xprv") {
         std::memcpy(scratch.data(), XPRV_VERSION, VERSION_PREFIX_LEN);
+    } else if (selected_key_type == "tpub") {
+        std::memcpy(scratch.data(), TPUB_VERSION, VERSION_PREFIX_LEN);
+    } else if (selected_key_type == "tprv") {
+        std::memcpy(scratch.data(), TPRV_VERSION, VERSION_PREFIX_LEN);
     } else {
+        // unknown type, default to xpub
         std::memcpy(scratch.data(), XPUB_VERSION, VERSION_PREFIX_LEN);
     }
 

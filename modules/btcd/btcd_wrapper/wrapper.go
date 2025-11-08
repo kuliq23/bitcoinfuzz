@@ -284,7 +284,7 @@ func BTCDAddress(data C.ByteArray) *C.char {
 //export BTCDDeserializeBIP32Key
 func BTCDDeserializeBIP32Key(data C.ByteArray) *C.char {
 	serializedKey := C.GoBytes(unsafe.Pointer(data.data), data.length)
-
+	println("Input   GO: ", string(serializedKey))
 	extKey, err := psbt.DecodeExtendedKey(serializedKey)
 	if err != nil {
 		return C.CString("UNABLE TO PARSE")

@@ -266,6 +266,7 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
         Ok(s) => s,
         Err(_) => return str_to_c_string("could not convert to string"),
     };
+    println!("Input RUST: {}", ext_str);
     match Xpub::from_str(&ext_str) {
         Ok(ext) => {
             str_to_c_string(&ext.to_string())
