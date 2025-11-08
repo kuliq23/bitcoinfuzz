@@ -514,7 +514,7 @@ std::optional<int> Bitcoin::cmpctblocks_parse(std::span<const uint8_t> buffer) c
 
 }
 
-std::optional<std::string> Bitcoin::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
 {
 
     DataStream ds{buffer};

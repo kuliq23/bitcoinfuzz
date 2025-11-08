@@ -59,8 +59,8 @@ public static class Bridge
             return false;
         }
     }
-    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_deserialize_key_xpub_xprv")]
-    public static IntPtr Bip32DeserializeKeyXpubXprv(IntPtr inputPtr)
+    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_deserialize_extended_key")]
+    public static IntPtr BIP32DeserializeExtendedKeyTarget(IntPtr inputPtr)
     {   
         string? input = null;
         try
@@ -75,7 +75,6 @@ public static class Bridge
         {
             return Marshal.StringToCoTaskMemUTF8("could not convert to string");
         }
-        Console.WriteLine("Innbi string: " + input);
         NBitcoin.ExtKey ext;
         try
         {
@@ -84,7 +83,6 @@ public static class Bridge
         }
         catch
         {
-            Console.WriteLine("UNABLE TO PARSE");
             return Marshal.StringToCoTaskMemUTF8("UNABLE TO PARSE");
         }
         try 

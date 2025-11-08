@@ -15,9 +15,9 @@ namespace bitcoinfuzz
         {
             return nbitcoin_descriptor_parse(str.c_str());
         }
-        std::optional<std::string> NBitcoin::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+        std::optional<std::string> NBitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
         {
-            char* p = nbitcoin_bip32_deserialize_key_xpub_xprv(buffer.data(), buffer.size());
+            char* p = nbitcoin_bip32_deserialize_extended_key(buffer.data(), buffer.size());
             if (p == nullptr) return std::nullopt;
             std::string s(p);
             nbitcoin_free_c_string(p);   

@@ -122,7 +122,7 @@ namespace bitcoinfuzz
             BTCDFreeString(result);
             return res;
         }
-        std::optional<std::string> Btcd::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+        std::optional<std::string> Btcd::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
         {
             ByteArray data;
             data.data = (char*)buffer.data();

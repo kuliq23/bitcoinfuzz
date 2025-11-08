@@ -413,18 +413,18 @@ namespace bitcoinfuzz
         }
     }
 
-    void Driver::BIP32DeserializeKeyXpubXprvTarget(std::span<const uint8_t> buffer) const
+    void Driver::BIP32DeserializeExtendedKeyTarget(std::span<const uint8_t> buffer) const
     {
         std::optional<std::string> last_response{std::nullopt};
         std::string last_module_name;
 
         for (auto &module : modules)
         {
-            std::optional<std::string> res{module.second->bip32_deserialize_key_xpub_xprv(buffer)};
+            std::optional<std::string> res{module.second->bip32_deserialize_extended_key(buffer)};
             if (!res.has_value()) continue;
             if (last_response.has_value()) {
                 if (*res != *last_response) {
-                    std::cout << "BIP32 deserialize key xpub/xprv parsing failed" << std::endl;
+                    std::cout << "BIP32 deserialize extended key parsing failed" << std::endl;
                     std::cout << "Module: " << module.first << std::endl;
                     std::cout << "Result: " << *res << std::endl;
                     std::cout << "Module: " << last_module_name << std::endl;
@@ -471,8 +471,8 @@ namespace bitcoinfuzz
             this->ParseLightningP2pMessageTarget(buffer);
         } else if (target == "transaction_eval") {
             this->TransactionEvalTarget(buffer);
-        } else if (target == "bip32_deserialize_key_xpub_xprv") {
-            this->BIP32DeserializeKeyXpubXprvTarget(buffer);
+        } else if (target == "bip32_deserialize_extended_key") {
+            this->BIP32DeserializeExtendedKeyTarget(buffer);
         } else {
             std::cout << "Target not defined!" << std::endl;
             assert(false);

@@ -77,9 +77,9 @@ namespace bitcoinfuzz
             return result;
         }
 
-        std::optional<std::string> Rustbitcoin::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+        std::optional<std::string> Rustbitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
         {
-            auto result_ptr = rust_bitcoin_bip32_deserialize_key_xpub_xprv(buffer.data(), buffer.size());
+            auto result_ptr = rust_bitcoin_bip32_deserialize_extended_key(buffer.data(), buffer.size());
             if (result_ptr == nullptr) return std::nullopt;
             std::string result(result_ptr);
             free_c_string(result_ptr);

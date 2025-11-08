@@ -38,6 +38,6 @@ namespace bitcoinfuzz
         void ParseP2PMessageTarget(std::span<const uint8_t> buffer) const;
         void ParseLightningP2pMessageTarget(std::span<const uint8_t> buffer) const;
         void TransactionEvalTarget(std::span<const uint8_t> buffer) const;
-        void BIP32DeserializeKeyXpubXprvTarget(std::span<const uint8_t> buffer) const;
+        void BIP32DeserializeExtendedKeyTarget(std::span<const uint8_t> buffer) const;
     };
 }

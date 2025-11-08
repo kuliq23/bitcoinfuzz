@@ -257,7 +257,7 @@ unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
+pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
     data: *const u8,
     len: usize,
 ) -> *mut c_char {
@@ -266,14 +266,11 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_key_xpub_xprv(
         Ok(s) => s,
         Err(_) => return str_to_c_string("could not convert to string"),
     };
-    println!("Inrus string: {}", ext_str);
     match Xpub::from_str(&ext_str) {
         Ok(ext) => {
-            println!("Parsed as ExtKey");
             str_to_c_string(&ext.to_string())
         }
         Err(e) => {
-            println!("UNABLE TO PARSE");
             str_to_c_string("UNABLE TO PARSE")
         }
     }

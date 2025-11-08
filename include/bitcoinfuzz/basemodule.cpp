@@ -82,7 +82,7 @@ namespace bitcoinfuzz
     {
         return std::nullopt;
     }
-    std::optional<std::string> BaseModule::bip32_deserialize_key_xpub_xprv(std::span<const uint8_t> buffer) const
+    std::optional<std::string> BaseModule::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
     {
         return std::nullopt;
     }
