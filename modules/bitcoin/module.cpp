@@ -3,6 +3,7 @@
 #include <string>
 
 #include "blockencodings.h"
+#include "base58.h"
 #include "chainparams.h"
 #include "consensus/validation.h"
 #include "consensus/tx_check.h"
@@ -516,25 +517,34 @@ std::optional<int> Bitcoin::cmpctblocks_parse(std::span<const uint8_t> buffer) c
 
 std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
 {
-
+    std::string keytype = "xpub";
+    keytype = std::getenv("EXTKEYTYPE");
     DataStream ds{buffer};
     std::vector<unsigned char> serialized_key(buffer.begin(), buffer.end());
-
+    std::string ext_str(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+    printf("Input CPP: %s\n", ext_str.c_str());
     try {
         CExtKey ext_key;
         CExtPubKey ext_pubkey;
-
-        if (serialized_key.size() != BIP32_EXTKEY_WITH_VERSION_SIZE) {
-            return std::string("UNABLE TO PARSE");
+        const unsigned char* ext_char = reinterpret_cast<const unsigned char*>(ext_str.data());
+        std::vector<unsigned char> decoded;
+        printf ("Keytype CPP: %s\n", keytype.c_str());
+        if (!DecodeBase58Check(ext_str, decoded, BIP32_EXTKEY_SIZE)) {
+            return "UNABLE TO PARSE 1";
+        }
+        if (decoded.size() != BIP32_EXTKEY_SIZE) {
+            return "UNABLE TO PARSE 2";
         }
 
-        if (serialized_key[0] == 0x04 && serialized_key[1] == 0x88 && serialized_key[2] == 0xAD && serialized_key[3] == 0xE4) {
+        if (keytype == std::string("xprv")) {
             // xprv
-            ext_key.Decode(serialized_key.data());
+            ext_key.Decode(decoded.data());
+            printf("Output CPP: %s\n", EncodeExtPubKey(ext_pubkey).c_str());
             return EncodeExtKey(ext_key);
-        } else if (serialized_key[0] == 0x04 && serialized_key[1] == 0x88 && serialized_key[2] == 0xB2 && serialized_key[3] == 0x1E) {
+        } else if (keytype == std::string("xpub")) {
             // xpub
-            ext_pubkey.Decode(serialized_key.data());
+            ext_pubkey.Decode(decoded.data());
+            printf("Output CPP: %s\n", EncodeExtPubKey(ext_pubkey).c_str());
             return EncodeExtPubKey(ext_pubkey);
             
         }else {

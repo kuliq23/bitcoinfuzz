@@ -6,6 +6,7 @@ use bitcoin::consensus::{deserialize_partial, encode, serialize};
 use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
 use bitcoin::bip32::Xpub;
+use bitcoin::bip32::Xpriv;
 use p2p::address::AddrV2;
 use p2p::message::{AddrV2Payload, RawNetworkMessage};
 use p2p::Magic;
@@ -267,12 +268,11 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
         Err(_) => return str_to_c_string("could not convert to string"),
     };
     println!("Input RUST: {}", ext_str);
-    match Xpub::from_str(&ext_str) {
-        Ok(ext) => {
-            str_to_c_string(&ext.to_string())
-        }
-        Err(e) => {
-            str_to_c_string("UNABLE TO PARSE")
-        }
+    if let Ok(xprv) = Xpriv::from_str(&ext_str) {
+        str_to_c_string(&xprv.to_string())
+    } else if let Ok(xpub) = Xpub::from_str(&ext_str) {
+        str_to_c_string(&xpub.to_string())
+    } else {
+        str_to_c_string("UNABLE TO PARSE")
     }
 }
