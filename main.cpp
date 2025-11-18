@@ -596,8 +596,9 @@ size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
 
     // enmcode back to base58check (with checksumn)
     std::string final_b58 = EncodeBase58Check(std::span<const unsigned char>(scratch.data(), returned_size));
-
+    //std::string final_b58 =  "xpub67uA5wAUuv1ypp7rEY7jUZBZmwFSULFUArLBJrHr3amnymkUEYWzQJz13zLacZv33sSuxKVmerpZeFExapBNt8HpAqtTtWqDQRAgyqSKUHu"; // for testing
     // truncate final string to max_size 
+    printf("Final B58: %s\n", final_b58.c_str());
     size_t final_len = std::min(final_b58.size(), max_size);
     if (final_len > 0) {
         std::memcpy(fuzz_data, final_b58.data(), final_len);

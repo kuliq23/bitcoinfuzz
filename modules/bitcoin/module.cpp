@@ -517,38 +517,48 @@ std::optional<int> Bitcoin::cmpctblocks_parse(std::span<const uint8_t> buffer) c
 
 std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
 {
-    std::string keytype = "xpub";
-    keytype = std::getenv("EXTKEYTYPE");
+    const char* env = std::getenv("EXTKEYTYPE");
+    std::string selected_key_type;
+    if (!env) {
+        selected_key_type = "xpub"; // default
+    }
+    else {
+        selected_key_type = std::string(env);
+    }
     DataStream ds{buffer};
     std::vector<unsigned char> serialized_key(buffer.begin(), buffer.end());
     std::string ext_str(reinterpret_cast<const char*>(buffer.data()), buffer.size());
     printf("Input CPP: %s\n", ext_str.c_str());
     try {
-        CExtKey ext_key;
-        CExtPubKey ext_pubkey;
-        const unsigned char* ext_char = reinterpret_cast<const unsigned char*>(ext_str.data());
-        std::vector<unsigned char> decoded;
-        printf ("Keytype CPP: %s\n", keytype.c_str());
-        if (!DecodeBase58Check(ext_str, decoded, BIP32_EXTKEY_SIZE)) {
-            return "UNABLE TO PARSE 1";
-        }
-        if (decoded.size() != BIP32_EXTKEY_SIZE) {
-            return "UNABLE TO PARSE 2";
-        }
-
-        if (keytype == std::string("xprv")) {
+        if (selected_key_type == "xprv") {
             // xprv
-            ext_key.Decode(decoded.data());
-            printf("Output CPP: %s\n", EncodeExtPubKey(ext_pubkey).c_str());
-            return EncodeExtKey(ext_key);
-        } else if (keytype == std::string("xpub")) {
+            SelectParams(ChainType::MAIN);
+            try {
+                CExtKey ext_key = DecodeExtKey(ext_str);
+                if (ext_key.key.size() == 0) {
+                    return std::string("UNABLE TO PARSE");
+                }
+                printf("Output CPP: %s\n", EncodeExtKey(ext_key).c_str());
+                return EncodeExtKey(ext_key);
+            } catch (const std::exception& e) {
+                return std::string("UNABLE TO PARSE");
+            }
+        } else if (selected_key_type == "xpub") {
+            SelectParams(ChainType::MAIN);
             // xpub
-            ext_pubkey.Decode(decoded.data());
-            printf("Output CPP: %s\n", EncodeExtPubKey(ext_pubkey).c_str());
-            return EncodeExtPubKey(ext_pubkey);
+            try {
+                CExtPubKey ext_pubkey = DecodeExtPubKey(ext_str);
+                if (ext_pubkey.pubkey.size() == 0) {
+                    return std::string("UNABLE TO PARSE");
+                }
+                printf("Output CPP: %s\n", EncodeExtPubKey(ext_pubkey).c_str());
+                return EncodeExtPubKey(ext_pubkey);
+            } catch (const std::exception& e) {
+                return std::string("UNABLE TO PARSE");
+            }
             
         }else {
-            return std::string("UNABLE TO PARSE");
+            return std::string("wrong env EXTKEYTYPE");
         }
     } catch (const std::exception& e) {
         return std::string(e.what());
