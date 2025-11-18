@@ -283,13 +283,15 @@ func BTCDAddress(data C.ByteArray) *C.char {
 
 //export BTCDDeserializeBIP32Key
 func BTCDDeserializeBIP32Key(data C.ByteArray) *C.char {
+	// GET RID OF THIS TARGET? The NewExtendedKey() func tahts eventually called provides no error checking!
 	serializedKey := C.GoBytes(unsafe.Pointer(data.data), data.length)
 	println("Input   GO: ", string(serializedKey))
 	extKey, err := psbt.DecodeExtendedKey(serializedKey)
 	if err != nil {
+		println("Error GO: ", err.Error())
 		return C.CString("UNABLE TO PARSE")
 	}
-
+	println("Output  GO: ", extKey.String())
 	return C.CString(extKey.String())
 }
 
