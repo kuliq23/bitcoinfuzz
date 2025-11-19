@@ -75,27 +75,65 @@ public static class Bridge
         {
             return Marshal.StringToCoTaskMemUTF8("could not convert to string");
         }
-        NBitcoin.ExtKey ext;
-        try
-        {
-            Console.WriteLine("Input   CS: " + input);
-            ext = NBitcoin.ExtKey.Parse(input, Network.Main);
-        }
-        catch
-        {
-            return Marshal.StringToCoTaskMemUTF8("UNABLE TO PARSE");
-        }
-        try 
-        {
-            return Marshal.StringToCoTaskMemUTF8(ext.ToString(Network.Main));
-        }
-        catch
-        {
-            return Marshal.StringToCoTaskMemUTF8("could not convert to string");
+
+        if (TryParseXprv(input, out string xprvResult)){
+            return Marshal.StringToCoTaskMemUTF8(xprvResult);
         }
 
+        if (TryParseXpub(input, out string xpubResult)){
+            return Marshal.StringToCoTaskMemUTF8(xpubResult);
+        }
+
+        return Marshal.StringToCoTaskMemUTF8("INVALID");
 
     }
+    // Helper methods for BIP32 deserialization
+    private static bool TryParseXprv(string input, out string result)
+    {
+        result = null;
+        try
+        {
+            var ext = NBitcoin.ExtKey.Parse(input, Network.Main);
+
+            string depthHex = ext.Depth.ToString("X2").ToLower();
+            byte[] fingerprint = ext.ParentFingerprint.ToBytes();
+            string fingerprintHex = BitConverter.ToString(fingerprint).Replace("-", "").ToLower();
+            string childHex = ext.Child.ToString("X8").ToLower();
+            string chainHex = BitConverter.ToString(ext.ChainCode).Replace("-", "").ToLower();
+            string keyHex = BitConverter.ToString(ext.PrivateKey.ToBytes()).Replace("-", "").ToLower();
+
+            result = $"depth={depthHex};fp={fingerprintHex};child={childHex};chaincode={chainHex};key={keyHex}";
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryParseXpub(string input, out string result)
+    {
+        result = null;
+        try
+        {
+            var exp = NBitcoin.ExtPubKey.Parse(input, Network.Main);
+
+            string depthHex = exp.Depth.ToString("X2").ToLower();
+            byte[] fingerprint = exp.ParentFingerprint.ToBytes();
+            string fingerprintHex = BitConverter.ToString(fingerprint).Replace("-", "").ToLower();
+            string childHex = exp.Child.ToString("X8").ToLower();
+            string chainHex = BitConverter.ToString(exp.ChainCode).Replace("-", "").ToLower();
+            string pubKeyHex = exp.PubKey.ToHex().ToLower();
+
+            result = $"depth={depthHex};fp={fingerprintHex};child={childHex};chaincode={chainHex};pub={pubKeyHex}";
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
     [UnmanagedCallersOnly(EntryPoint = "nbitcoin_free_c_string")]
     public static void FreeString(IntPtr ptr)
     {

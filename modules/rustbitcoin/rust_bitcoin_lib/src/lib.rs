@@ -269,10 +269,32 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
     };
     println!("Input RUST: {}", ext_str);
     if let Ok(xprv) = Xpriv::from_str(&ext_str) {
-        str_to_c_string(&xprv.to_string())
+        let depth = xprv.depth;
+        let fingerprint = xprv.parent_fingerprint;
+        let child_number = xprv.child_number;
+        let chain_code = xprv.chain_code;
+        let key_bytes = xprv.private_key.secret_bytes();
+        let hex_key_bytes: String = key_bytes.iter().map(|b| format!("{:02x}", b)).collect();
+        println!(
+            "deserrst xprv: depth={:02x} fingerprint={:02x}{:02x}{:02x}{:02x} child={:08x} chaincode={} key={}",
+            depth,
+            fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
+            child_number,
+            chain_code,
+            hex_key_bytes
+        );
+
+        str_to_c_string(&format!(
+            "depth={:02x};fp={:02x}{:02x}{:02x}{:02x};child={:08x};chaincode={};key={}",
+            depth,
+            fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
+            child_number,
+            chain_code,
+            hex_key_bytes
+        ))
     } else if let Ok(xpub) = Xpub::from_str(&ext_str) {
         str_to_c_string(&xpub.to_string())
     } else {
-        str_to_c_string("UNABLE TO PARSE")
+        str_to_c_string("INVALID")
     }
 }
