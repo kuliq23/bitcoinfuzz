@@ -87,7 +87,8 @@ public static class Bridge
         return Marshal.StringToCoTaskMemUTF8("INVALID");
 
     }
-    // Helper methods for BIP32 deserialization
+    // Helper methods for BIP32 deserialization...
+    // REFACTOR to cleaner code?
     private static bool TryParseXprv(string input, out string result)
     {
         result = null;

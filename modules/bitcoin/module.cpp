@@ -549,7 +549,7 @@ std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<con
                 HexStr(key_bytes).c_str()
             );
 
-return result;
+            return result;
             //unsigned char buf[BIP32_EXTKEY_SIZE];
             //ext_key.Encode(buf);
             //std::vector<unsigned char> out(buf, buf + BIP32_EXTKEY_SIZE);
