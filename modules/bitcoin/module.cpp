@@ -521,9 +521,9 @@ std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<con
     }
     std::string ext_str(reinterpret_cast<const char*>(buffer.data()), buffer.size());
 
+    SelectParams(ChainType::MAIN);
     if (selected_key_type == "xprv") {
         // xprv
-        SelectParams(ChainType::MAIN);
         try {
             CExtKey ext_key = DecodeExtKey(ext_str);
             if (ext_key.key.size() == 0) { //need to pass the first input before mutation begins when starting from empty corpus
@@ -535,10 +535,6 @@ std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<con
             uint256 chaincode = ext_key.chaincode;
             std::vector<unsigned char> key_bytes(ext_key.key.size());
             std::memcpy(key_bytes.data(), ext_key.key.data(), ext_key.key.size());
-            
-            printf("desercpp xprv: depth=%02x fp%02x%02x%02x%02x child=%08x chaincode=%s key=%s\n",
-                   depth[0], fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3], child,
-                   HexStr(chaincode).c_str(), HexStr(key_bytes).c_str());
 
             std::string result = strprintf(
                 "depth=%02x;fp=%02x%02x%02x%02x;child=%08x;chaincode=%s;key=%s",
@@ -550,49 +546,35 @@ std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<con
             );
 
             return result;
-            //unsigned char buf[BIP32_EXTKEY_SIZE];
-            //ext_key.Encode(buf);
-            //std::vector<unsigned char> out(buf, buf + BIP32_EXTKEY_SIZE);
-            //printf("deENrialized xprv: %s\n", HexStr(out).c_str());
         } catch (const std::exception& e) {
             return std::string("INVALID");
         }
     } else if (selected_key_type == "xpub") {
-        SelectParams(ChainType::MAIN);
         // xpub
         try {
             CExtPubKey ext_pubkey = DecodeExtPubKey(ext_str);
             if (ext_pubkey.pubkey.size() == 0) {
                 return std::string("INVALID");
             }
-            return EncodeExtPubKey(ext_pubkey);
+            std::vector<unsigned char> depth = {ext_pubkey.nDepth};
+            std::vector<unsigned char> fingerprint = {ext_pubkey.vchFingerprint[0], ext_pubkey.vchFingerprint[1], ext_pubkey.vchFingerprint[2], ext_pubkey.vchFingerprint[3]};
+            int child = ext_pubkey.nChild;
+            uint256 chaincode = ext_pubkey.chaincode;
+            std::vector<unsigned char> key_bytes(ext_pubkey.pubkey.size());
+            std::memcpy(key_bytes.data(), ext_pubkey.pubkey.data(), ext_pubkey.pubkey.size());
+
+            std::string result = strprintf(
+                "depth=%02x;fp=%02x%02x%02x%02x;child=%08x;chaincode=%s;key=%s",
+                depth[0],
+                fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
+                child,
+                HexStr(chaincode).c_str(),
+                HexStr(key_bytes).c_str()
+            );
+            return result;
         } catch (const std::exception& e) {
             return std::string("INVALID");
         }
-    } else if (selected_key_type == "tpub") {
-        // tpub
-        SelectParams(ChainType::TESTNET);
-        try {
-            CExtPubKey ext_pubkey = DecodeExtPubKey(ext_str);
-            if (ext_pubkey.pubkey.size() == 0) {
-                return std::string("INVALID");
-            }
-            return EncodeExtPubKey(ext_pubkey);
-        } catch (const std::exception& e) {
-            return std::string("INVALID");
-        }
-    } else if (selected_key_type == "tprv") {
-        // tprv
-        SelectParams(ChainType::TESTNET);
-        try {
-            CExtKey ext_key = DecodeExtKey(ext_str);
-            if (ext_key.key.size() == 0) {
-                return std::string("INVALID");
-            }
-            return EncodeExtKey(ext_key);
-        } catch (const std::exception& e) {
-            return std::string("INVALID");
-        }  
     }else {
         return std::string("wrong env EXTKEYTYPE");
     }
