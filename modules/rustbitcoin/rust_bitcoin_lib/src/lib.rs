@@ -7,6 +7,9 @@ use bitcoin::script::{ScriptBuf, ScriptExt};
 use bitcoin::Block;
 use bitcoin::bip32::Xpub;
 use bitcoin::bip32::Xpriv;
+use bitcoin::bip32::Fingerprint;
+use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::ChainCode;
 use p2p::address::AddrV2;
 use p2p::message::{AddrV2Payload, RawNetworkMessage};
 use p2p::Magic;
@@ -15,6 +18,7 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::slice;
 use std::str::{FromStr, Utf8Error};
+use std::env;
 
 unsafe fn str_to_c_string(input: &str) -> *mut c_char {
     CString::new(input).unwrap().into_raw()
@@ -257,6 +261,25 @@ unsafe fn c_str_to_str<'a>(input: *const c_char) -> Result<&'a str, Utf8Error> {
     CStr::from_ptr(input).to_str()
 }
 
+//helper func
+fn format_ext_key_common(
+    depth: u8,
+    fingerprint: Fingerprint,
+    child_number: ChildNumber,
+    chain_code: ChainCode,
+    key_bytes: &[u8],
+) -> String {
+    let hex_key_bytes: String = key_bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    format!(
+        "depth={:02x};fp={:02x}{:02x}{:02x}{:02x};child={:08x};chaincode={};key={}",
+        depth,
+        fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
+        child_number,
+        chain_code,
+        hex_key_bytes
+    )
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
     data: *const u8,
@@ -265,36 +288,45 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
     let data_slice = slice::from_raw_parts(data, len);
     let ext_str = match std::str::from_utf8(data_slice) {
         Ok(s) => s,
-        Err(_) => return str_to_c_string("could not convert to string"),
+        Err(_) => return str_to_c_string("INVALID"),
     };
-    println!("Input RUST: {}", ext_str);
-    if let Ok(xprv) = Xpriv::from_str(&ext_str) {
-        let depth = xprv.depth;
-        let fingerprint = xprv.parent_fingerprint;
-        let child_number = xprv.child_number;
-        let chain_code = xprv.chain_code;
-        let key_bytes = xprv.private_key.secret_bytes();
-        let hex_key_bytes: String = key_bytes.iter().map(|b| format!("{:02x}", b)).collect();
-        println!(
-            "deserrst xprv: depth={:02x} fingerprint={:02x}{:02x}{:02x}{:02x} child={:08x} chaincode={} key={}",
-            depth,
-            fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
-            child_number,
-            chain_code,
-            hex_key_bytes
-        );
-
-        str_to_c_string(&format!(
-            "depth={:02x};fp={:02x}{:02x}{:02x}{:02x};child={:08x};chaincode={};key={}",
-            depth,
-            fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
-            child_number,
-            chain_code,
-            hex_key_bytes
-        ))
-    } else if let Ok(xpub) = Xpub::from_str(&ext_str) {
-        str_to_c_string(&xpub.to_string())
+    //get the keytype from env variable, default is xpub
+    let extkeytype = env::var("EXTKEYTYPE").unwrap_or_else(|_| "xpub".to_string());
+    //xprv, tprv
+    if extkeytype == "xprv" || extkeytype == "tprv" {
+        //try decode xprv, tprv
+        if let Ok(xprv) = Xpriv::from_str(&ext_str) {
+            //format the result to string
+            let result = format_ext_key_common(
+                xprv.depth,
+                xprv.parent_fingerprint,
+                xprv.child_number,
+                xprv.chain_code,
+                &xprv.private_key.secret_bytes(), // as bytes
+            );
+            //return formatted string
+            str_to_c_string(&result)
+        } else {
+            str_to_c_string("INVALID")
+        }
+    //xpub, tpub
     } else {
-        str_to_c_string("INVALID")
+        //try decode xpub, tpub
+        if let Ok(xpub) = Xpub::from_str(&ext_str) {
+            //format the result to string
+            let result = format_ext_key_common(
+                xpub.depth,
+                xpub.parent_fingerprint,
+                xpub.child_number,
+                xpub.chain_code,
+                &xpub.public_key.serialize(), // as bytes
+            );
+            //return formatted string
+            str_to_c_string(&result)
+        } else {
+            str_to_c_string("INVALID")
+        }
     }
+
 }
+
