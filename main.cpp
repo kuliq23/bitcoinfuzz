@@ -530,13 +530,13 @@ static constexpr size_t VERSION_PREFIX_LEN = 4;
 size_t LLVMFuzzerCustomMutator(uint8_t *fuzz_data, size_t size, size_t max_size,
                                unsigned int seed) {
     // 1) Decide key type via env
-    const char* env = std::getenv("EXTKEYTYPE");
-    std::string selected_key_type;
-    if (!env) {
-        selected_key_type = "xpub"; // default
-    }
-    else {
-        selected_key_type = std::string(env);
+    std::string selected_key_type = "xpub"; // default
+                                
+    if (const char* env = std::getenv("EXTKEYTYPE")) {
+        std::string e(env);
+        if (e == "xpub" || e == "xprv" || e == "tpub" || e == "tprv") {
+            selected_key_type = e;
+        }
     }
 
     // xpub/xprv bytes
