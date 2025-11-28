@@ -64,7 +64,6 @@ using Type = miniscript::Type;
 using MsCtx = miniscript::MiniscriptContext;
 using miniscript::operator"" _mst;
 
-
 //! Some pre-computed data for more efficient string roundtrips and to simulate challenges.
 struct TestData {
     typedef CPubKey Key;
