@@ -270,11 +270,12 @@ fn format_ext_key_common(
     key_bytes: &[u8],
 ) -> String {
     let hex_key_bytes: String = key_bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    let child_u32: u32 = child_number.into();
     format!(
         "depth={:02x};fp={:02x}{:02x}{:02x}{:02x};child={:08x};chaincode={};key={}",
         depth,
         fingerprint[0], fingerprint[1], fingerprint[2], fingerprint[3],
-        child_number,
+        child_u32,
         chain_code,
         hex_key_bytes
     )
