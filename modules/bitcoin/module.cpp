@@ -64,6 +64,7 @@ using Type = miniscript::Type;
 using MsCtx = miniscript::MiniscriptContext;
 using miniscript::operator"" _mst;
 
+
 //! Some pre-computed data for more efficient string roundtrips and to simulate challenges.
 struct TestData {
     typedef CPubKey Key;
@@ -511,18 +512,21 @@ std::optional<int> Bitcoin::cmpctblocks_parse(std::span<const uint8_t> buffer) c
 
 std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const
 {
-    const char* env = std::getenv("EXTKEYTYPE");
-    std::string selected_key_type;
-    if (!env) {
-        selected_key_type = "xpub"; // default
-    }
-    else {
-        selected_key_type = std::string(env);
+    std::string selected_key_type = "xpub"; // default
+                                
+    if (const char* env = std::getenv("EXTKEYTYPE")) {
+        std::string e(env);
+        if (e == "xpub" || e == "xprv" || e == "tpub" || e == "tprv") {
+            selected_key_type = e;
+        }
     }
     std::string ext_str(reinterpret_cast<const char*>(buffer.data()), buffer.size());
-
-    SelectParams(ChainType::MAIN);
-    if (selected_key_type == "xprv") {
+    if (selected_key_type == "tprv" || selected_key_type == "tpub") {
+        SelectParams(ChainType::TESTNET);
+    }else{
+        SelectParams(ChainType::MAIN); //default is xpub
+    }
+        if (selected_key_type == "xprv" || selected_key_type == "tprv") {
         // xprv
         try {
             CExtKey ext_key = DecodeExtKey(ext_str);
@@ -549,7 +553,7 @@ std::optional<std::string> Bitcoin::bip32_deserialize_extended_key(std::span<con
         } catch (const std::exception& e) {
             return std::string("INVALID");
         }
-    } else if (selected_key_type == "xpub") {
+    } else if (selected_key_type == "xpub" || selected_key_type == "tpub") {
         // xpub
         try {
             CExtPubKey ext_pubkey = DecodeExtPubKey(ext_str);
