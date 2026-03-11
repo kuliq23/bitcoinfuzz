@@ -401,3 +401,18 @@ services:
     env_file: .env
     volumes:
       - ./docker:/app/data
+
+  bip32_path_parse:
+    build:
+      context: .
+      tags:
+        - bitcoinfuzz:bip32_path_parse
+      args:
+        CXXFLAGS: "-DRUST_BITCOIN -DNBITCOIN -DBITCOIN_CORE -DBITCOINJ"
+        FUZZ: bip32_path_parse
+      environment:
+        LIBFUZZ_DETECT_LEAKS: 0
+        ASAN_OPTIONS: detect_leaks=0
+    env_file: .env
+    volumes:
+      - ./docker:/app/data

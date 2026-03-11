@@ -152,6 +152,17 @@ char *embit_bip32_deserialize_extended_key(const uint8_t *data, size_t len) {
       data, len, "bip32_deserialize_extended_key", create_bytes_object,
       convert_to_string);
 }
+// Send raw bytes to Python instead of PyUnicode_FromString, which
+// rejects non-UTF-8 input with noisy stderr errors
+static PyObject *create_bytes_from_string(const char *input, size_t len) {
+  return PyBytes_FromStringAndSize(input, len);
+}
+
+char *embit_bip32_path_parse(const std::string &input) {
+  return call_python_function<const char *, char *>(
+      input.c_str(), input.size(), "bip32_path_parse", create_bytes_from_string,
+      convert_to_string);
+}
 
 namespace bitcoinfuzz {
 namespace module {
@@ -187,6 +198,18 @@ Embit::psbt_parse(std::span<const uint8_t> buffer) const {
 std::optional<std::string>
 Embit::bip32_master_keygen(std::span<const uint8_t> buffer) const {
   auto result_ptr = embit_bip32_master_keygen(buffer.data(), buffer.size());
+  if (result_ptr == nullptr)
+    return std::nullopt;
+
+  std::string result(result_ptr);
+  free(result_ptr);
+  return result;
+}
+
+Embit::bip32_path_parse(std::span<const uint8_t> buffer) const {
+  const std::string path_str(reinterpret_cast<const char *>(buffer.data()),
+                             buffer.size());
+  auto result_ptr = embit_bip32_path_parse(path_str);
   if (result_ptr == nullptr)
     return std::nullopt;
 

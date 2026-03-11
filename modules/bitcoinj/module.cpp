@@ -16,6 +16,7 @@ static bool jvm_initialized = false;
 static jclass bitcoinJWrapperClass = nullptr;
 static jmethodID createMasterKeyMethod = nullptr;
 static jmethodID deserializeExtendedKeyMethod = nullptr;
+static jmethodID pathParseMethod = nullptr;
 
 static bool init_jvm() {
   if (jvm_initialized) {
@@ -24,17 +25,20 @@ static bool init_jvm() {
 
   jvm = JvmLoader::get_jvm();
   if (!jvm) {
+    printf("NB Failed to get JVM\n");
     return false;
   }
 
   JNIEnv *env = nullptr;
   jint ge = jvm->GetEnv((void **)&env, JNI_VERSION_1_8);
   if (ge != JNI_OK || !env) {
+    printf("NB Failed to get JNIEnv (status=%d)\n", ge);
     return false;
   }
 
   bitcoinJWrapperClass = env->FindClass("wrapper/Wrapper");
   if (!bitcoinJWrapperClass) {
+    printf("NB Failed to find class wrapper/Wrapper\n");
     return false;
   }
   bitcoinJWrapperClass =
@@ -43,12 +47,21 @@ static bool init_jvm() {
   createMasterKeyMethod = env->GetStaticMethodID(
       bitcoinJWrapperClass, "createMasterKey", "([B)Ljava/lang/String;");
   if (!createMasterKeyMethod) {
+    printf("NB Failed to find method createMasterKey\n");
     return false;
   }
 
   deserializeExtendedKeyMethod = env->GetStaticMethodID(
       bitcoinJWrapperClass, "deserializeExtendedKey", "([B)Ljava/lang/String;");
   if (!deserializeExtendedKeyMethod) {
+    printf("NB Failed to find method deserializeExtendedKey\n");
+    return false;
+  }
+
+  pathParseMethod = env->GetStaticMethodID(bitcoinJWrapperClass, "pathParse",
+                                           "([B)Ljava/lang/String;");
+  if (!pathParseMethod) {
+    printf("NB Failed to find method pathParse\n");
     return false;
   }
 
@@ -59,22 +72,26 @@ static bool init_jvm() {
 static std::optional<std::string>
 call_wrapper_method(jmethodID &methodRef, std::span<const uint8_t> buffer) {
   if (!init_jvm() || !jvm) {
-    return "";
+    printf("NB JVM init failed\n");
+    return "JVM FAILED";
   }
 
   if (!methodRef) {
-    return "";
+    printf("NB Method reference is null\n");
+    return "INVALID";
   }
 
   JNIEnv *env = nullptr;
   jint status = jvm->GetEnv((void **)&env, JNI_VERSION_1_8);
   if (status != JNI_OK || !env) {
-    return "";
+    printf("NB Failed to get JNIEnv in call (status=%d)\n", status);
+    return "JVM FAILED";
   }
 
   jbyteArray jBytes = env->NewByteArray(static_cast<jsize>(buffer.size()));
   if (!jBytes) {
-    return "";
+    printf("NB Failed to allocate jbyteArray\n");
+    return "JVM FAILED";
   }
 
   env->SetByteArrayRegion(jBytes, 0, static_cast<jsize>(buffer.size()),
@@ -86,13 +103,15 @@ call_wrapper_method(jmethodID &methodRef, std::span<const uint8_t> buffer) {
   env->DeleteLocalRef(jBytes);
 
   if (!jResult) {
-    return "";
+    printf("NB Method returned null\n");
+    return "FAILED";
   }
 
   const char *resultChars = env->GetStringUTFChars(jResult, nullptr);
   if (!resultChars) {
+    printf("NB Failed to get UTF chars from result string\n");
     env->DeleteLocalRef(jResult);
-    return "";
+    return "FAILED";
   }
 
   std::string result(resultChars);
@@ -117,6 +136,11 @@ BitcoinJ::bip32_master_keygen(std::span<const uint8_t> buffer) const {
 std::optional<std::string> BitcoinJ::bip32_deserialize_extended_key(
     std::span<const uint8_t> buffer) const {
   return call_wrapper_method(deserializeExtendedKeyMethod, buffer);
+}
+
+std::optional<std::string>
+BitcoinJ::bip32_path_parse(std::span<const uint8_t> buffer) const {
+  return call_wrapper_method(pathParseMethod, buffer);
 }
 } // namespace module
 } // namespace bitcoinfuzz

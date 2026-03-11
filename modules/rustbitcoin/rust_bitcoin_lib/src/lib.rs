@@ -438,3 +438,18 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
         }
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_path_parse(data: *const c_char) -> *mut c_char {
+    let cstr = std::ffi::CStr::from_ptr(data);
+
+    let s = match cstr.to_str() {
+        Ok(s) => s,
+        Err(_) => return str_to_c_string("INVALID"),
+    };
+
+    match bitcoin::bip32::DerivationPath::from_str(s) {
+        Ok(_) => str_to_c_string("CORRECT"),
+        Err(_) => str_to_c_string("INVALID"),
+    }
+}

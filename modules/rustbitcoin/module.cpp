@@ -98,5 +98,15 @@ std::optional<std::string> Rustbitcoin::bip32_deserialize_extended_key(
   free_c_string(result_ptr);
   return result;
 }
+std::optional<std::string>
+Rustbitcoin::bip32_path_parse(std::span<const uint8_t> buffer) const {
+  auto result_ptr = rust_bitcoin_bip32_path_parse(buffer.data(), buffer.size());
+  if (result_ptr == nullptr)
+    return std::nullopt;
+  std::string result(result_ptr);
+  free_c_string(result_ptr);
+  return result;
+}
+
 } // namespace module
 } // namespace bitcoinfuzz

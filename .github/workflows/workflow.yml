@@ -240,6 +240,11 @@ jobs:
             target: "stump_modify"
             cxxflags: "-DRUSTREEXO -DUTREEXO"
             asan_options: "detect_leaks=0:detect_container_overflow=0"
+          - corpus: "bip32_path_parse"
+            target: "bip32_path_parse"
+            cxxflags: "-DRUST_BITCOIN -DNBITCOIN -DBITCOIN_CORE -DBITCOINJ"
+            asan_options: "detect_leaks=0:detect_container_overflow=0"
+            setup_java: "true"
 
     steps:
       - name: Checkout repo

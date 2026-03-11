@@ -314,4 +314,36 @@ public static class Bridge
     {
         if (ptr != IntPtr.Zero) Marshal.FreeHGlobal(ptr);
     }
+
+    [UnmanagedCallersOnly(EntryPoint = "nbitcoin_bip32_path_parse")]
+    public static IntPtr BIP32PathParse(IntPtr pathPtr, int len)
+    {
+        string input;
+        try
+        {
+            input = Marshal.PtrToStringUTF8(pathPtr, len) ?? "";
+        }
+        catch
+        {
+            return Marshal.StringToCoTaskMemUTF8("INVALID");
+        }
+        try
+        {
+
+            if (KeyPath.TryParse(input, out var keyPath) && keyPath != null)
+            {
+                Console.WriteLine($"Parsed path: {keyPath}");
+                return Marshal.StringToCoTaskMemUTF8("CORRECT");
+            }
+        }
+        catch
+        {
+
+        }
+        return Marshal.StringToCoTaskMemUTF8("INVALID");
+    }
+
+
+
+
 }

@@ -24,6 +24,7 @@ const TranslateFn G_TRANSLATION_FUN{nullptr};
 #include "script/script.h"
 #include "span.h"
 #include "streams.h"
+#include "util/bip32.h"
 #include "util/chaintype.h"
 #include "validation.h"
 
@@ -660,6 +661,18 @@ Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const {
   } catch (...) {
     return "INVALID";
   }
+}
+std::optional<std::string>
+Bitcoin::bip32_path_parse(std::span<const uint8_t> buffer) const {
+  const std::string path_str(reinterpret_cast<const char *>(buffer.data()),
+                             buffer.size());
+  std::vector<uint32_t> keypath;
+  if (!ParseHDKeypath(path_str, keypath)) {
+    // Failed to parse
+    return "INVALID";
+  }
+
+  return "CORRECT";
 }
 
 } // namespace module
