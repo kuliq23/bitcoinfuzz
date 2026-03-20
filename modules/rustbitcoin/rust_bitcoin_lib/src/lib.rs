@@ -2,6 +2,7 @@ use bitcoin::absolute::Decodable;
 use bitcoin::address::Address;
 use bitcoin::bip32::ChainCode;
 use bitcoin::bip32::ChildNumber;
+use bitcoin::bip32::DerivationPath;
 use bitcoin::bip32::Fingerprint;
 use bitcoin::bip32::Xpriv;
 use bitcoin::bip32::Xpub;
@@ -436,5 +437,43 @@ pub unsafe extern "C" fn rust_bitcoin_bip32_deserialize_extended_key(
         } else {
             str_to_c_string("INVALID")
         }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_bitcoin_bip32_derive_from_path(
+    data: *const u8,
+    len: usize,
+) -> *mut c_char {
+    let data_slice = slice::from_raw_parts(data, len);
+    let path_str = match std::str::from_utf8(data_slice) {
+        Ok(s) => s,
+        Err(_) => return str_to_c_string("INVALID"),
+    };
+    //let path_str = "m/0/1'/2/3'";
+    let path = match DerivationPath::from_str(path_str) {
+        Ok(p) => p,
+        Err(_) => return str_to_c_string("INVALID"),
+    };
+
+    if path.as_ref().is_empty() {
+        return str_to_c_string("INVALID");
+    }
+    // Use a fixed master key for testing
+    let seed: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e,
+        0x1f, 0x20,
+    ];
+
+    let master_key = Xpriv::new_master(NetworkKind::Main, &seed);
+
+    // Derive the child key from the master key using the provided path
+    match master_key.derive_priv(&path) {
+        Ok(derived_key) => {
+            //println!("Derived key: {}", derived_key);
+            str_to_c_string(&derived_key.to_string())
+        }
+        Err(_) => str_to_c_string("FAILED"),
     }
 }

@@ -147,6 +147,10 @@
 #include <custommutator/mutators/schnorr_signature.h>
 #endif
 
+#ifdef CUSTOM_MUTATOR_BIP32_PATH
+#include <custommutator/mutators/bip32_path.h>
+#endif
+
 namespace bitcoinfuzz {
 
 inline void InitializeRegistry() {

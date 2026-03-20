@@ -19,8 +19,10 @@
 #include "script/interpreter.h"
 #include "script/miniscript.h"
 #include "script/script.h"
+#include "secp256k1.h"
 #include "span.h"
 #include "streams.h"
+#include "util/bip32.h"
 #include "util/chaintype.h"
 #include "validation.h"
 
@@ -639,6 +641,55 @@ Bitcoin::bip32_deserialize_extended_key(std::span<const uint8_t> buffer) const {
   } catch (...) {
     return "INVALID";
   }
+}
+
+std::optional<std::string>
+Bitcoin::bip32_derive_from_path(std::span<const uint8_t> buffer) const {
+  std::string path_str(reinterpret_cast<const char *>(buffer.data()),
+                       buffer.size());
+  static ECC_Context ecc_context;
+  SelectParams(ChainType::MAIN);
+  unsigned char seed_raw[32] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+                                0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+                                0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+
+  std::span<const std::byte> seed = std::as_bytes(std::span(seed_raw));
+  CExtKey current;
+  current.SetSeed(seed);
+
+  // Translate BitcoinJ mutator format ("44H / 0H / 1") to Bitcoin Core
+  // ParseHDKeypath format ("44'/0'/1"):
+  //   - strip all spaces
+  //   - replace 'H' with '\''
+  std::string core_path;
+  core_path.reserve(path_str.size());
+  for (char c : path_str) {
+    if (c == ' ') continue;
+    if (c == 'H') { core_path += '\''; continue; }
+    core_path += c;
+  }
+
+  std::vector<uint32_t> path;
+  if (!ParseHDKeypath(core_path, path)) {  // ← use core_path, not path_str
+    printf("CORE Failed to parse path: %s\n", core_path.c_str());
+    return "INVALID";
+  }
+  if (path.empty()) {
+    return "INVALID";
+  }
+
+  for (uint32_t child : path) {
+    CExtKey next;
+    if (!current.Derive(next, child)) {
+      printf("Failed to derive child %u from %s\n", child,
+             EncodeExtKey(current).c_str());
+      return "INVALID";
+    }
+    current = next;
+  }
+  printf("CORE Derived key: %s\n", EncodeExtKey(current).c_str());
+  return EncodeExtKey(current);
 }
 
 } // namespace module
