@@ -1,3 +1,5 @@
+
+#include <algorithm>
 #include <span>
 
 #include "module.h"
@@ -101,6 +103,38 @@ std::optional<std::string> Rustbitcoin::bip32_deserialize_extended_key(
 
 std::optional<std::string>
 Rustbitcoin::bip32_derive_from_path(std::span<const uint8_t> buffer) const {
+  // PATH FILTERING BEGINS
+  //  if buffer contains a '+', return nullopt
+  if (std::find(buffer.begin(), buffer.end(), static_cast<uint8_t>('+')) !=
+      buffer.end())
+    return std::nullopt;
+  // if trailing slash, return nullopt
+  if (!buffer.empty() && buffer.back() == static_cast<uint8_t>('/'))
+    return std::nullopt;
+  // if whitespace present, return nullopt
+  if (std::find_if(buffer.begin(), buffer.end(), ::isspace) != buffer.end())
+    return std::nullopt;
+  // if index too large (> 0x7FFFFFFF), return nullopt
+  std::string path_str(buffer.begin(), buffer.end());
+  size_t start = 0;
+  while (start < path_str.size()) {
+    size_t end = path_str.find('/', start);
+    std::string part = path_str.substr(start, end - start);
+    if (!part.empty() && (part.back() == '\'' || part.back() == 'h'))
+      part.pop_back();
+    if (!part.empty()) {
+      try {
+        unsigned long long val = std::stoull(part);
+        if (val > 0x7FFFFFFF)
+          return std::nullopt;
+      } catch (...) {
+      }
+    }
+    if (end == std::string::npos)
+      break;
+    start = end + 1;
+  }
+  // PATH FILTERING ENDS
   auto result_ptr =
       rust_bitcoin_bip32_derive_from_path(buffer.data(), buffer.size());
   if (result_ptr == nullptr)

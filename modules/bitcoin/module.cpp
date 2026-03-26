@@ -647,6 +647,12 @@ std::optional<std::string>
 Bitcoin::bip32_derive_from_path(std::span<const uint8_t> buffer) const {
   std::string path_str(reinterpret_cast<const char *>(buffer.data()),
                        buffer.size());
+  // PATH FILTERING BEGINS
+  // if path_str contains a 'h', return nullopt
+  if (path_str.find('h') != std::string::npos) {
+    return std::nullopt;
+  }
+  // PATH FILTERING ENDS
   static ECC_Context ecc_context;
   SelectParams(ChainType::MAIN);
   unsigned char seed_raw[32] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -658,21 +664,8 @@ Bitcoin::bip32_derive_from_path(std::span<const uint8_t> buffer) const {
   CExtKey current;
   current.SetSeed(seed);
 
-  // Translate BitcoinJ mutator format ("44H / 0H / 1") to Bitcoin Core
-  // ParseHDKeypath format ("44'/0'/1"):
-  //   - strip all spaces
-  //   - replace 'H' with '\''
-  std::string core_path;
-  core_path.reserve(path_str.size());
-  for (char c : path_str) {
-    if (c == ' ') continue;
-    if (c == 'H') { core_path += '\''; continue; }
-    core_path += c;
-  }
-
   std::vector<uint32_t> path;
-  if (!ParseHDKeypath(core_path, path)) {  // ← use core_path, not path_str
-    printf("CORE Failed to parse path: %s\n", core_path.c_str());
+  if (!ParseHDKeypath(path_str, path)) {
     return "INVALID";
   }
   if (path.empty()) {
@@ -682,13 +675,11 @@ Bitcoin::bip32_derive_from_path(std::span<const uint8_t> buffer) const {
   for (uint32_t child : path) {
     CExtKey next;
     if (!current.Derive(next, child)) {
-      printf("Failed to derive child %u from %s\n", child,
-             EncodeExtKey(current).c_str());
       return "INVALID";
     }
     current = next;
   }
-  printf("CORE Derived key: %s\n", EncodeExtKey(current).c_str());
+
   return EncodeExtKey(current);
 }
 
