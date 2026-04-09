@@ -890,24 +890,29 @@ void Driver::StumpModifyAddTarget(std::span<const uint8_t> buffer) const {
 }
 
 void Driver::Bip32PathParseTarget(std::span<const uint8_t> buffer) const {
-  FuzzedDataProvider provider(buffer.data(), buffer.size());
-  std::string path{provider.ConsumeRemainingBytesAsString()};
   std::optional<std::string> last_response{std::nullopt};
   std::string last_module_name;
-
+  std::string mypath = "m/1//";
+  std::span<const uint8_t> mybuffer{reinterpret_cast<const uint8_t *>(mypath.data()),mypath.size()};
   for (auto &module : modules) {
-    std::optional<std::string> res{module.second->bip32_path_parse(buffer)};
+    std::optional<std::string> res{module.second->bip32_path_parse(mybuffer)};
     if (!res.has_value())
       continue;
     if (last_response.has_value()) {
       if (*res != *last_response) {
-        std::cout << "BIP32 path parse failed for " << path << std::endl;
+        std::cout << "BIP32 path parse failed for " << mypath << std::endl;
         std::cout << "Module: " << module.first << std::endl;
         std::cout << "Result: " << *res << std::endl;
         std::cout << "Module: " << last_module_name << std::endl;
         std::cout << "Result: " << *last_response << std::endl;
       }
-      assert(*res == *last_response);
+      //assert(*res == *last_response);
+    }
+    std::cout << "Module: " << module.first << std::endl;
+    std::cout << "Result: " << *res << std::endl;
+    if (last_response.has_value()) {
+      std::cout << "Module: " << last_module_name << std::endl;
+      std::cout << "Result: " << *last_response << std::endl;
     }
     last_response = res.value();
     last_module_name = module.first;

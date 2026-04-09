@@ -206,6 +206,7 @@ Embit::bip32_master_keygen(std::span<const uint8_t> buffer) const {
   return result;
 }
 
+std::optional<std::string>
 Embit::bip32_path_parse(std::span<const uint8_t> buffer) const {
   const std::string path_str(reinterpret_cast<const char *>(buffer.data()),
                              buffer.size());
