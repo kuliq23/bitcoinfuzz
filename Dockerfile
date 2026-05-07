@@ -123,13 +123,14 @@ RUN if [ -z "${FUZZ}" ]; then \
 
 COPY --from=builder --chmod=0755 /build/bitcoinfuzz .
 # shared libs
-COPY --from=builder \
-    --parents \
-    --exclude=**/gradle-wrapper.jar \
-    --exclude=**/eclair_extracted/ \
-    /build/modules/*/lib /
-COPY --from=builder /build/*.so .
-
+RUN --mount=from=builder,src=/build,target=/src,ro \
+    set -eux; \
+    mkdir -p /; \
+    find /src/modules -type d -name lib -print0 2>/dev/null | while IFS= read -r -d '' d; do \
+      rel="${d#/src/}"; \
+      mkdir -p "/$(dirname "$rel")"; \
+      cp -a "$d" "/$(dirname "$rel")/"; \
+    done
 # Copy only the symbolizer to avoid bloating the base image
 COPY --from=builder \
     /usr/lib/llvm-18/bin/llvm-symbolizer /usr/bin/llvm-symbolizer
