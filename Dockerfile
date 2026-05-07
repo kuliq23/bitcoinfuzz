@@ -122,6 +122,8 @@ RUN if [ -z "${FUZZ}" ]; then \
     mkdir -p ${FUZZ_DATADIR}
 
 COPY --from=builder --chmod=0755 /build/bitcoinfuzz .
+COPY --from=builder /build/modules /app/modules
+ENV LD_LIBRARY_PATH=/app/modules:$LD_LIBRARY_PATH
 # shared libs
 RUN --mount=from=builder,src=/build,target=/src,ro \
     set -eux; \
