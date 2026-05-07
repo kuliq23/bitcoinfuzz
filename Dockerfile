@@ -122,12 +122,7 @@ RUN if [ -z "${FUZZ}" ]; then \
     mkdir -p ${FUZZ_DATADIR}
 
 COPY --from=builder --chmod=0755 /build/bitcoinfuzz .
-# shared libs
-COPY --from=builder \
-    --parents \
-    --exclude=**/gradle-wrapper.jar \
-    --exclude=**/eclair_extracted/ \
-    /build/modules/*/lib /
+
 COPY --from=builder /build/*.so .
 
 # Copy only the symbolizer to avoid bloating the base image
