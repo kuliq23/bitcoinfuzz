@@ -122,33 +122,14 @@ RUN if [ -z "${FUZZ}" ]; then \
     mkdir -p ${FUZZ_DATADIR}
 
 COPY --from=builder --chmod=0755 /build/bitcoinfuzz .
+# shared libs
+COPY --from=builder \
+    --parents \
+    --exclude=**/gradle-wrapper.jar \
+    --exclude=**/eclair_extracted/ \
+    /build/modules/*/lib /
+COPY --from=builder /build/*.so .
 
-# Copy modules (optional, keep if you need module assets)
-COPY --from=builder /build/modules /app/modules
-
-# --- FIX: ensure CppBridge .so are present where the binary expects them ---
-# These are produced by modules/*/Makefile and copied to /build/*.so in the builder stage.
-# The bitcoinfuzz binary tries to load them as "./NBitcoin.CppBridge.so" etc.
-COPY --from=builder /build/NBitcoin.CppBridge.so /app/
-COPY --from=builder /build/NBitcoinSecp256k1.CppBridge.so /app/ || true
-COPY --from=builder /build/NLightning.CppBridge.so /app/ || true
-
-# --- FIX: make dynamic linker able to find libs in module lib dirs ---
-ENV LD_LIBRARY_PATH=/app:/app/modules/nbitcoin/lib:/app/modules/nbitcoinsecp256k1/lib:/app/modules/nlightning/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-
-# --- FIX: fail fast when a requested module is missing its bridge ---
-# (MODULES is runtime env, but this at least catches default MODULES builds; see note below)
-RUN test -f /app/NBitcoin.CppBridge.so
-
-# shared libs (your existing copy loop can stay, but it's not sufficient by itself)
-RUN --mount=from=builder,src=/build,target=/src,ro \
-    set -eux; \
-    mkdir -p /; \
-    find /src/modules -type d -name lib -print0 2>/dev/null | while IFS= read -r -d '' d; do \
-      rel="${d#/src/}"; \
-      mkdir -p "/$(dirname "$rel")"; \
-      cp -a "$d" "/$(dirname "$rel")/"; \
-    done
 # Copy only the symbolizer to avoid bloating the base image
 COPY --from=builder \
     /usr/lib/llvm-18/bin/llvm-symbolizer /usr/bin/llvm-symbolizer
