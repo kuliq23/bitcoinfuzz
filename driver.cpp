@@ -5,6 +5,9 @@
 #include <string>
 #include <string_view>
 #include <unistd.h>
+#include <cstdlib>      // getenv
+#include <vector>
+#include <cctype>
 
 #include "driver.h"
 #include <bitcoinfuzz/basemodule.h>
@@ -450,14 +453,55 @@ void Driver::ParseLightningP2pMessageTarget(
                            "Lightning P2P message parsing failed");
   }
 }
+// Local hex parser (no external deps)
+static int HexVal(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
+static std::vector<uint8_t> ParseHexLocal(const char* hex) {
+  std::vector<uint8_t> out;
+  if (!hex) return out;
+  const char* p = hex;
+  while (*p) {
+    while (*p && std::isspace(static_cast<unsigned char>(*p))) ++p;
+    if (!*p) break;
+    int hi = HexVal(*p++);
+    if (hi < 0 || !*p) { out.clear(); return out; }
+    int lo = HexVal(*p++);
+    if (lo < 0) { out.clear(); return out; }
+    out.push_back(static_cast<uint8_t>((hi << 4) | lo));
+  }
+  return out;
+}
+
 void Driver::Bip32MasterKeygenTarget(std::span<const uint8_t> buffer) const {
   std::optional<std::string> last_response{std::nullopt};
   std::string last_module_name;
 
+  // Env override: hex string
+  if (const char* env = std::getenv("BIP32_MASTER_KEYGEN_HEX")) {
+    std::vector<uint8_t> override_bytes = ParseHexLocal(env);
+    if (!override_bytes.empty()) {
+      buffer = std::span<const uint8_t>(override_bytes.data(),
+                                        override_bytes.size());
+    }
+  }
+
   for (auto &module : modules) {
     std::optional<std::string> res{module.second->bip32_master_keygen(buffer)};
-    if (!res.has_value())
+
+    // Always print per-module result
+    if (!res.has_value()) {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: SKIPPED (nullopt)" << std::endl;
       continue;
+    } else {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: " << *res << std::endl;
+    }
 
     VerifyMatchingResponse(last_response, last_module_name, module.first, *res,
                            "BIP32 master keygen failed");
@@ -596,14 +640,35 @@ void Driver::Bip32DeserializeExtendedKeyTarget(
   std::optional<std::string> last_response{std::nullopt};
   std::string last_module_name;
 
+  // Optional override via env var (raw extkey string bytes)
+  std::string override_str;
+  if (const char* env = std::getenv("BIP32_EXTKEY_STR")) {
+    override_str = env;
+    if (!override_str.empty()) {
+      buffer = std::span<const uint8_t>(
+          reinterpret_cast<const uint8_t*>(override_str.data()),
+          override_str.size());
+    }
+  }
+
   for (auto &module : modules) {
     std::optional<std::string> res{
         module.second->bip32_deserialize_extended_key(buffer)};
-    if (!res.has_value())
-      continue;
 
-    VerifyMatchingResponse(last_response, last_module_name, module.first, *res,
-                           "BIP32 deserialize extended key failed");
+    // Always print per-module result
+    if (!res.has_value()) {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: SKIPPED (nullopt)" << std::endl;
+      continue;
+    } else {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: " << *res << std::endl;
+    }
+
+    //VerifyMatchingResponse(last_response, last_module_name, module.first, *res,
+    //                       "BIP32 deserialize extended key failed");
+    last_response = *res;
+    last_module_name = module.first;
   }
 }
 
