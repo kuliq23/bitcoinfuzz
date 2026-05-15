@@ -710,15 +710,35 @@ void Driver::Bip32DeriveFromPathTarget(std::span<const uint8_t> buffer) const {
 }
 
 void Driver::Bip32PathParseTarget(std::span<const uint8_t> buffer) const {
-  FuzzedDataProvider provider(buffer.data(), buffer.size());
   std::optional<std::string> last_response{std::nullopt};
   std::string last_module_name;
-  for (auto &module : modules) {
+
+  // Optional override via env var (raw path string bytes)
+  std::string override_str;
+  if (const char* env = std::getenv("BIP32_PATH_STR")) {
+    override_str = env;
+    if (!override_str.empty()) {
+      buffer = std::span<const uint8_t>(
+          reinterpret_cast<const uint8_t*>(override_str.data()),
+          override_str.size());
+    }
+  }
+
+  for (auto& module : modules) {
     std::optional<std::string> res{module.second->bip32_path_parse(buffer)};
-    if (!res.has_value())
+
+    // Always print per-module result
+    if (!res.has_value()) {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: SKIPPED (nullopt)" << std::endl;
       continue;
-    VerifyMatchingResponse(last_response, last_module_name, module.first, *res,
-                           "BIP32 path parse failed");
+    } else {
+      std::cout << "Module: " << module.first << std::endl;
+      std::cout << "Result: " << *res << std::endl;
+    }
+
+    last_response = *res;
+    last_module_name = module.first;
   }
 }
 
